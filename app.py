@@ -1,10 +1,39 @@
 import streamlit as st
 from agent import PrimAgent
+from knowledge_base import collection
 import os
 
 st.set_page_config(page_title="PrimLogix Debug Agent", layout="wide")
 
 st.title("🤖 PrimLogix Debug Agent")
+
+# Check if knowledge base is empty
+kb_count = collection.count()
+if kb_count == 0:
+    st.warning("⚠️ **Base de connaissances vide** - Le bot ne peut pas rechercher dans la documentation PrimLogix.")
+    st.info("💡 **Solution**: La base de connaissances doit être initialisée. Sur Streamlit Cloud, vous pouvez soit :\n"
+            "1. Inclure le dossier `chroma_db/` dans le repository (retirez-le de .gitignore)\n"
+            "2. Ou exécuter le script d'ingestion après le déploiement")
+    
+    with st.expander("🔧 Initialiser la base de connaissances"):
+        if st.button("🚀 Lancer l'ingestion de la documentation"):
+            with st.spinner("Scraping et ingestion en cours... Cela peut prendre plusieurs minutes."):
+                try:
+                    from scraper import run_scraper
+                    from knowledge_base import add_documents
+                    
+                    st.write("📥 Scraping de la documentation PrimLogix...")
+                    data = run_scraper()
+                    
+                    st.write(f"💾 Ajout de {len(data)} pages à la base de connaissances...")
+                    add_documents(data)
+                    
+                    st.success(f"✅ Base de connaissances initialisée avec {collection.count()} documents!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Erreur lors de l'ingestion: {e}")
+else:
+    st.sidebar.success(f"📚 Base de connaissances: {kb_count} documents")
 
 # Sidebar Configuration
 st.sidebar.header("⚙️ Configuration")
