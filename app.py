@@ -7,31 +7,65 @@ st.set_page_config(page_title="PrimLogix Debug Agent", layout="wide")
 
 st.title("🤖 PrimLogix Debug Agent")
 
+# Auto-initialize knowledge base if empty (only once per session)
+if "kb_initialized" not in st.session_state:
+    kb_count = collection.count()
+    if kb_count == 0:
+        # Try to initialize automatically in background
+        st.session_state.kb_initialized = False
+        st.session_state.kb_auto_init_attempted = False
+    else:
+        st.session_state.kb_initialized = True
+        st.session_state.kb_auto_init_attempted = True
+
 # Check if knowledge base is empty
 kb_count = collection.count()
 if kb_count == 0:
     st.warning("⚠️ **Base de connaissances vide** - Le bot ne peut pas rechercher dans la documentation PrimLogix.")
-    st.info("💡 **Solution**: La base de connaissances doit être initialisée. Sur Streamlit Cloud, vous pouvez soit :\n"
-            "1. Inclure le dossier `chroma_db/` dans le repository (retirez-le de .gitignore)\n"
-            "2. Ou exécuter le script d'ingestion après le déploiement")
     
-    with st.expander("🔧 Initialiser la base de connaissances"):
-        if st.button("🚀 Lancer l'ingestion de la documentation"):
-            with st.spinner("Scraping et ingestion en cours... Cela peut prendre plusieurs minutes."):
+    # Auto-initialization option
+    if not st.session_state.get("kb_auto_init_attempted", False):
+        st.info("💡 **Initialisation automatique disponible** - Cliquez sur le bouton ci-dessous pour initialiser automatiquement la base de connaissances.")
+    
+    with st.expander("🔧 Initialiser la base de connaissances", expanded=True):
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.markdown("""
+            **Options d'initialisation :**
+            
+            1. **Automatique (Recommandé)** : Cliquez sur le bouton ci-dessous pour scraper et ingérer la documentation
+            2. **Manuelle** : Incluez le dossier `chroma_db/` dans le repository GitHub
+            """)
+        
+        if st.button("🚀 Lancer l'ingestion automatique de la documentation", type="primary", use_container_width=True):
+            st.session_state.kb_auto_init_attempted = True
+            with st.spinner("Scraping et ingestion en cours... Cela peut prendre 5-10 minutes. Veuillez patienter..."):
                 try:
                     from scraper import run_scraper
                     from knowledge_base import add_documents
                     
-                    st.write("📥 Scraping de la documentation PrimLogix...")
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    status_text.text("📥 Étape 1/2 : Scraping de la documentation PrimLogix...")
+                    progress_bar.progress(30)
                     data = run_scraper()
                     
-                    st.write(f"💾 Ajout de {len(data)} pages à la base de connaissances...")
+                    status_text.text(f"💾 Étape 2/2 : Ajout de {len(data)} pages à la base de connaissances...")
+                    progress_bar.progress(70)
                     add_documents(data)
                     
-                    st.success(f"✅ Base de connaissances initialisée avec {collection.count()} documents!")
+                    progress_bar.progress(100)
+                    final_count = collection.count()
+                    status_text.text(f"✅ Terminé ! {final_count} documents chargés")
+                    
+                    st.success(f"✅ Base de connaissances initialisée avec {final_count} documents!")
+                    st.session_state.kb_initialized = True
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Erreur lors de l'ingestion: {e}")
+                    st.info("💡 **Alternative** : Vous pouvez inclure le dossier `chroma_db/` dans le repository GitHub pour éviter l'initialisation à chaque déploiement.")
 else:
     st.sidebar.success(f"📚 Base de connaissances: {kb_count} documents")
 

@@ -47,9 +47,10 @@ ENV/
 !.streamlit/secrets.toml.example
 
 # ChromaDB
-chroma_db/
-*.db
-*.sqlite3
+# chroma_db/  # Décommentez pour exclure la base de connaissances du repo
+# *.db        # Décommentez pour exclure les fichiers .db
+# *.sqlite3   # Décommentez pour exclure les fichiers .sqlite3
+# Note: Pour déployer avec la base de connaissances, gardez ces lignes commentées
 
 # Scraped data
 scraped_data.json
