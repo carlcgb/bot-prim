@@ -211,11 +211,11 @@ for message in st.session_state.messages:
                                             new_width = max_width
                                             new_height = int(max_width * aspect_ratio)
                                             # Use LANCZOS resampling for high quality, fallback to ANTIALIAS for older PIL
-                                try:
-                                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                                except AttributeError:
-                                    # Fallback for older PIL versions
-                                    img = img.resize((new_width, new_height), Image.LANCZOS)
+                                            try:
+                                                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                                            except AttributeError:
+                                                # Fallback for older PIL versions
+                                                img = img.resize((new_width, new_height), Image.LANCZOS)
                                         
                                         # Use caption from markdown or default
                                         display_caption = caption if caption and not caption.startswith("Capture d'écran") else f"Capture {idx+1}"
