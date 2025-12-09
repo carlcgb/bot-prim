@@ -34,13 +34,27 @@ class PrimAgent:
                     function_declarations=[
                         genai.protos.FunctionDeclaration(
                             name="search_knowledge_base",
-                            description="Recherche dans la base de connaissances de la documentation PrimLogix pour obtenir de l'aide sur les fonctionnalités du logiciel PRIM, les questions, les erreurs ou les procédures. Utilisez cet outil pour trouver des informations dans la documentation d'aide PrimLogix. Répondez toujours en français et citez les sources trouvées.",
+                            description="""Recherche approfondie dans la base de connaissances de la documentation PrimLogix.
+                            
+UTILISE CET OUTIL pour:
+- Trouver des solutions à des problèmes techniques ou erreurs
+- Comprendre comment utiliser une fonctionnalité spécifique
+- Obtenir des procédures détaillées étape par étape
+- Trouver des exemples de configuration ou d'utilisation
+- Rechercher des informations sur des champs, paramètres, ou options spécifiques
+
+IMPORTANT:
+- Utilise des termes techniques précis dans ta requête (noms de champs, codes d'erreur, noms de fonctionnalités)
+- Si la première recherche ne donne pas de résultats satisfaisants, essaie des variantes de la requête
+- Combine les informations de plusieurs résultats pour donner une réponse complète
+- Cite toujours les sources (URLs) dans ta réponse finale
+- Les résultats incluent des scores de pertinence et des captures d'écran quand disponibles""",
                             parameters=genai.protos.Schema(
                                 type=genai.protos.Type.OBJECT,
                                 properties={
                                     "query": genai.protos.Schema(
                                         type=genai.protos.Type.STRING,
-                                        description="La requête de recherche liée à la documentation PrimLogix."
+                                        description="Requête de recherche détaillée et spécifique. Utilise des termes techniques précis, codes d'erreur, noms de fonctionnalités, ou descriptions de problèmes. Exemples: 'erreur E001', 'configuration export CSV', 'champ date de facturation', 'procédure création client'."
                                     )
                                 },
                                 required=["query"]
@@ -61,19 +75,24 @@ class PrimAgent:
 
 
     def _search_kb(self, query):
-        print(f"DEBUG: Searching KB for '{query}'")
+        print(f"🔍 DEBUG: Searching KB for '{query}'")
         try:
-            # Search with more results for better coverage
-            results = query_knowledge_base(query, n_results=5)
+            # Search with more results for better coverage and context
+            results = query_knowledge_base(query, n_results=10)
             if not results['documents'] or not results['documents'][0]:
-                 return "Aucune documentation pertinente trouvée dans la base de connaissances PrimLogix."
+                 return "❌ Aucune documentation pertinente trouvée dans la base de connaissances PrimLogix pour cette requête."
             
             docs = results['documents'][0]
             metadatas = results['metadatas'][0]
             distances = results.get('distances', [None])[0] if results.get('distances') else [None] * len(docs)
             
-            context = ""
+            # Build detailed context with relevance scores
+            context_parts = []
             all_images = []  # Collect all images from results
+            seen_urls = set()  # Track unique URLs to avoid duplicates
+            
+            context_parts.append(f"📚 **Résultats de recherche** (requête: \"{query}\")\n")
+            context_parts.append(f"Trouvé {len(docs)} document(s) pertinent(s) dans la base de connaissances PrimLogix:\n")
             
             for i, doc in enumerate(docs):
                 if not doc or not doc.strip():
@@ -81,52 +100,79 @@ class PrimAgent:
                     
                 source = metadatas[i].get('url', 'URL inconnue') if i < len(metadatas) else 'URL inconnue'
                 title = metadatas[i].get('title', 'Sans titre') if i < len(metadatas) else 'Sans titre'
+                chunk_idx = metadatas[i].get('chunk_index', '?') if i < len(metadatas) else '?'
+                
+                # Calculate relevance score
+                relevance_score = None
+                relevance_badge = ""
+                if distances and i < len(distances) and distances[i] is not None:
+                    # Lower distance = more relevant, convert to percentage-like score
+                    relevance_score = max(0, min(100, int((1 - distances[i]) * 100)))
+                    if relevance_score >= 80:
+                        relevance_badge = "🟢 [Très pertinent]"
+                    elif relevance_score >= 60:
+                        relevance_badge = "🟡 [Pertinent]"
+                    elif relevance_score >= 40:
+                        relevance_badge = "🟠 [Modérément pertinent]"
+                    else:
+                        relevance_badge = "⚪ [Peu pertinent]"
+                    relevance_badge += f" (Score: {relevance_score}%)"
                 
                 # Extract images from metadata
                 images_json = metadatas[i].get('images', '') if i < len(metadatas) else ''
                 if images_json:
                     try:
                         images = json.loads(images_json)
-                        all_images.extend(images)
+                        for img in images:
+                            if img['url'] not in seen_urls:
+                                seen_urls.add(img['url'])
+                                all_images.append(img)
                     except:
                         pass
                 
-                # Add relevance info if available
-                relevance = ""
-                if distances and i < len(distances) and distances[i] is not None:
-                    # Lower distance = more relevant, convert to percentage-like score
-                    score = max(0, min(100, int((1 - distances[i]) * 100)))
-                    if score > 50:  # Only show if reasonably relevant
-                        relevance = f" [Pertinence: {score}%]"
+                # Build detailed source info
+                source_info = f"\n### 📄 Document #{i+1}: {title}"
+                if relevance_badge:
+                    source_info += f" {relevance_badge}"
+                source_info += f"\n**URL:** {source}"
+                source_info += f"\n**Chunk:** {chunk_idx}"
+                source_info += f"\n\n**Contenu:**\n{doc}\n"
+                source_info += "\n" + "─" * 60 + "\n"
                 
-                context += f"\n**Source: {title}**{relevance}\nURL: {source}\n\nContenu:\n{doc}\n\n---\n"
+                context_parts.append(source_info)
             
-            if not context.strip():
-                return "Aucune documentation pertinente trouvée dans la base de connaissances PrimLogix."
+            if not context_parts:
+                return "❌ Aucune documentation pertinente trouvée dans la base de connaissances PrimLogix."
             
-            # Add image information to response
-            response_text = f"Résultats de la recherche dans la documentation PrimLogix:\n{context}"
+            # Combine all context
+            response_text = "\n".join(context_parts)
+            
+            # Add summary statistics
+            response_text += f"\n\n**📊 Résumé:** {len(docs)} document(s) trouvé(s)"
+            if all_images:
+                response_text += f", {len(all_images)} image(s) associée(s)"
             
             # Add image URLs at the end in a special format that can be parsed
             if all_images:
                 # Remove duplicates while preserving order
-                seen_urls = set()
                 unique_images = []
+                seen_img_urls = set()
                 for img in all_images:
-                    if img['url'] not in seen_urls:
-                        seen_urls.add(img['url'])
+                    if img['url'] not in seen_img_urls:
+                        seen_img_urls.add(img['url'])
                         unique_images.append(img)
                 
                 if unique_images:
                     image_section = "\n\n[SCREENSHOTS]\n"
-                    for img in unique_images[:5]:  # Limit to 5 images
-                        image_section += f"![{img.get('alt', 'Screenshot')}]({img['url']})\n"
+                    for img in unique_images[:8]:  # Increased to 8 images for better coverage
+                        alt_text = img.get('alt', 'Screenshot') or img.get('title', 'Screenshot') or 'Screenshot'
+                        image_section += f"![{alt_text}]({img['url']})\n"
                     response_text += image_section
             
             return response_text
         except Exception as e:
-            logger.error(f"Error searching KB: {e}")
-            return f"Erreur lors de la recherche dans la base de connaissances: {e}"
+            logger.error(f"Error searching KB: {e}", exc_info=True)
+            return f"❌ Erreur lors de la recherche dans la base de connaissances: {str(e)}\n\nDétails techniques: {type(e).__name__}"
 
 
     def run(self, messages):
@@ -155,9 +201,39 @@ class PrimAgent:
         last_content = last_msg.get('content', '')
         
         def attempt_chat(params_model_name):
+            # Enhanced system instruction for detailed, debugging-friendly responses
+            system_instruction = """Tu es PRIMBOT, un assistant expert spécialisé dans l'aide au débogage et la résolution de problèmes pour PrimLogix.
+
+TON RÔLE:
+- Aider les utilisateurs à résoudre des problèmes techniques avec PrimLogix
+- Fournir des réponses DÉTAILLÉES et STRUCTURÉES pour faciliter le débogage
+- Expliquer les étapes de résolution de manière claire et méthodique
+- Citer les sources de documentation utilisées
+
+STYLE DE RÉPONSE:
+1. **Structure claire**: Utilise des titres, listes à puces, et sections bien organisées
+2. **Détails techniques**: Inclus les informations spécifiques (noms de champs, valeurs, chemins, etc.)
+3. **Étapes numérotées**: Pour les procédures, utilise des étapes numérotées
+4. **Citations**: Mentionne toujours les sources de documentation utilisées
+5. **Exemples concrets**: Fournis des exemples de code, configurations, ou valeurs si pertinent
+6. **Diagnostic**: Si le problème n'est pas clair, propose des étapes de diagnostic
+
+QUAND TU UTILISES LA BASE DE CONNAISSANCES:
+- Analyse TOUS les résultats de recherche fournis
+- Combine les informations de plusieurs sources si nécessaire
+- Mentionne les scores de pertinence si disponibles
+- Utilise les captures d'écran fournies pour illustrer tes explications
+
+IMPORTANT:
+- Réponds en français sauf si l'utilisateur demande explicitement en anglais
+- Sois précis et technique, mais reste accessible
+- Si tu n'es pas sûr, dis-le et propose des pistes de vérification
+- Pour les erreurs, fournis toujours le contexte et les causes possibles"""
+            
             model_auto = genai.GenerativeModel(
                 model_name=params_model_name,
-                tools=self.gemini_tools
+                tools=self.gemini_tools,
+                system_instruction=system_instruction
             )
             chat_auto = model_auto.start_chat(history=history)
             

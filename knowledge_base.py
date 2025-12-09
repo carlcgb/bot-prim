@@ -85,11 +85,20 @@ def add_documents(pages_data):
             
     print(f"Total documents in DB: {collection.count()}")
 
-def query_knowledge_base(query, n_results=5):
-    """Query the database for relevant chunks."""
+def query_knowledge_base(query, n_results=10):
+    """Query the database for relevant chunks.
+    
+    Args:
+        query: Search query string
+        n_results: Number of results to return (default: 10 for better context)
+    
+    Returns:
+        Dictionary with 'documents', 'metadatas', 'distances', and 'ids'
+    """
     results = collection.query(
         query_texts=[query],
-        n_results=n_results
+        n_results=n_results,
+        include=['documents', 'metadatas', 'distances', 'ids']
     )
     return results
 

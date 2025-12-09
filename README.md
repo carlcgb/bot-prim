@@ -9,9 +9,11 @@ Un agent d'assistance intelligent pour la documentation PrimLogix utilisant Gemi
 
 ## ✨ Fonctionnalités
 
-- 🔍 **Recherche intelligente** dans la base de connaissances PrimLogix
-- 🤖 **Support Gemini AI** pour des réponses précises
-- 📸 **Affichage de captures d'écran** de la documentation
+- 🔍 **Recherche intelligente** dans la base de connaissances PrimLogix (10 résultats pour meilleur contexte)
+- 🤖 **Support Gemini AI** pour des réponses détaillées et structurées
+- 📊 **Scores de pertinence** pour évaluer la qualité des résultats
+- 📸 **Affichage de captures d'écran** de la documentation (jusqu'à 8 images)
+- 🎯 **Réponses optimisées pour le débogage** avec détails techniques et exemples
 - 🇫🇷 **Interface en français**
 - 💻 **Interface CLI** pour utilisation en ligne de commande
 - 🌐 **Interface Web** via Streamlit
@@ -150,6 +152,11 @@ L'app inclut un bouton d'initialisation automatique dans l'interface si la base 
 ✅ **Base de connaissances incluse** : La base de connaissances (2630 documents) est maintenant incluse dans le repository, donc elle sera automatiquement disponible après le déploiement sur Streamlit Cloud.
 
 Si vous voyez "Base de connaissances vide", utilisez le bouton d'initialisation dans l'interface pour re-scraper la documentation.
+
+## 📚 Documentation
+
+- **[AGENT_GUIDE.md](AGENT_GUIDE.md)** : Guide complet pour obtenir les meilleures réponses de l'agent, comprendre les scores de pertinence, et optimiser vos questions
+- **[RELEASE.md](RELEASE.md)** : Instructions pour créer des releases CLI
 
 ## 📁 Structure du projet
 
