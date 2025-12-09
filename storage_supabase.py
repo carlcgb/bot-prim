@@ -38,16 +38,22 @@ class SupabaseStorage:
             raise ImportError("psycopg2 n'est pas installé. pip install psycopg2-binary")
         
         # Configuration depuis variables d'environnement
-        self.supabase_url = os.getenv("SUPABASE_URL")
-        self.supabase_key = os.getenv("SUPABASE_KEY")
+        # Valeurs par défaut pour faciliter le setup
+        self.supabase_url = os.getenv("SUPABASE_URL", "https://qwpdehqkxcvsblkwpbop.supabase.co")
+        self.supabase_key = os.getenv("SUPABASE_KEY", "sb_publishable_C59Ew0JS7YvEZPoYA1MkWQ_-UEMZuf6")
         self.db_url = os.getenv("SUPABASE_DB_URL")
         
-        if not all([self.supabase_url, self.supabase_key, self.db_url]):
+        if not self.db_url:
             raise ValueError(
-                "Variables d'environnement manquantes. Configurez:\n"
-                "- SUPABASE_URL\n"
-                "- SUPABASE_KEY\n"
-                "- SUPABASE_DB_URL"
+                "SUPABASE_DB_URL manquant!\n\n"
+                "Pour obtenir la connection string:\n"
+                "1. Allez sur https://supabase.com/dashboard\n"
+                "2. Sélectionnez votre projet\n"
+                "3. Settings > Database\n"
+                "4. Copiez la 'Connection string' (URI mode)\n"
+                "5. Remplacez [YOUR-PASSWORD] par votre mot de passe\n\n"
+                "Exemple:\n"
+                "postgresql://postgres:VOTRE_MOT_DE_PASSE@db.qwpdehqkxcvsblkwpbop.supabase.co:5432/postgres"
             )
         
         # Clients
