@@ -1,4 +1,42 @@
-# 💾 Options de Stockage Gratuites pour PRIMBOT
+# 💾 Stockage Local pour PRIMBOT
+
+PRIMBOT utilise maintenant un **stockage 100% local** pour :
+- 📚 **Base de connaissances** : ChromaDB (local, dans `chroma_db/`)
+- 💬 **Historique des conversations** : SQLite (local, dans `~/.primbot/storage/`)
+- 🧠 **Données d'apprentissage** : SQLite (feedback et évaluations)
+
+## ✅ Solution Actuelle : Stockage Local
+
+**Avantages :**
+- ✅ **100% gratuit** - Aucun service cloud requis
+- ✅ **100% privé** - Toutes les données restent sur votre machine
+- ✅ **Aucune configuration** - Fonctionne immédiatement
+- ✅ **Pas de dépendance réseau** - Fonctionne hors ligne
+- ✅ **Rapide** - Accès local direct
+
+**Stockage :**
+- **Base de connaissances** : `chroma_db/` (dans le projet)
+- **Conversations** : `~/.primbot/storage/conversations.db` (SQLite)
+- **Feedback** : `~/.primbot/storage/conversations.db` (même base)
+
+---
+
+## 📝 Note : Options Cloud (Archive)
+
+Ce guide présentait auparavant des options cloud gratuites (Supabase, Qdrant, etc.).
+Ces options ont été retirées pour simplifier et privilégier le stockage local.
+
+Si vous avez besoin d'un stockage cloud à l'avenir, vous pouvez :
+1. Utiliser les solutions présentées ci-dessous (non maintenues)
+2. Créer votre propre système de stockage
+3. Migrer vers un service cloud de votre choix
+
+---
+
+## 🏆 Options Cloud (Archive - Non Maintenues)
+
+<details>
+<summary>Cliquez pour voir les anciennes options cloud (non maintenues)</summary>
 
 Ce guide présente les meilleures solutions **100% gratuites** pour héberger :
 - 📚 **Base de connaissances** (vectorielle)
@@ -125,7 +163,7 @@ pip install supabase pgvector psycopg2-binary
 
 ### Étape 3 : Configuration
 
-Créez `storage_config.py` :
+Créez `storage_config.py` :pip install supabase pgvector psycopg2-binary
 
 ```python
 import os
@@ -421,4 +459,16 @@ FALLBACK_TO_CHROMADB = true
 ## 🆘 Support
 
 Pour toute question sur la migration, ouvrez une issue sur GitHub.
+
+</details>
+
+---
+
+## 🎯 Recommandation Actuelle
+
+**Utilisez le stockage local** (`storage_local.py`) qui est :
+- ✅ Déjà intégré dans l'application
+- ✅ Fonctionne automatiquement
+- ✅ Aucune configuration requise
+- ✅ 100% gratuit et privé
 
