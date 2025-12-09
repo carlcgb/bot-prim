@@ -1,6 +1,7 @@
 import streamlit as st
 from agent import PrimAgent
 from knowledge_base import collection
+from storage_local import get_storage
 import os
 
 st.set_page_config(page_title="PrimLogix Debug Agent", layout="wide")
@@ -68,6 +69,15 @@ if kb_count == 0:
                     st.info("💡 **Alternative** : Vous pouvez inclure le dossier `chroma_db/` dans le repository GitHub pour éviter l'initialisation à chaque déploiement.")
 else:
     st.sidebar.success(f"📚 Base de connaissances: {kb_count} documents")
+    
+    # Afficher le nombre de conversations sauvegardées
+    try:
+        storage = get_storage()
+        conv_count = storage.count()
+        if conv_count > 0:
+            st.sidebar.info(f"💬 Conversations sauvegardées: {conv_count}")
+    except Exception:
+        pass
 
 # Sidebar Configuration
 st.sidebar.header("⚙️ Configuration")
@@ -318,6 +328,18 @@ if prompt := st.chat_input("Describe the problem..."):
                 message_placeholder.markdown(response)
             
             st.session_state.messages.append({"role": "assistant", "content": response})
+            
+            # Sauvegarder la conversation localement
+            try:
+                storage = get_storage()
+                user_id = "streamlit_user"  # Vous pouvez personnaliser selon votre système d'authentification
+                storage.save_conversation(user_id, prompt, response, metadata={
+                    "provider": provider_type,
+                    "model": model_name
+                })
+            except Exception as save_error:
+                # Ne pas bloquer si la sauvegarde échoue
+                st.sidebar.warning(f"⚠️ Impossible de sauvegarder la conversation: {save_error}")
             
         except Exception as e:
             error_msg = str(e)

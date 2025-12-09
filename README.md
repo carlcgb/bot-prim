@@ -248,7 +248,6 @@ Si vous voyez "Base de connaissances vide", utilisez le bouton d'initialisation 
 Toute la documentation est disponible dans le dossier [`docs/`](docs/) :
 
 - **[docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)** ⭐ : Guide complet des options AI gratuites (Gemini et Ollama)
-- **[docs/STORAGE_OPTIONS.md](docs/STORAGE_OPTIONS.md)** 💾 : Guide complet des solutions de stockage gratuites (Supabase, Qdrant, MongoDB) pour héberger la base de connaissances et l'historique
 - **[docs/CLI_INSTALLATION.md](docs/CLI_INSTALLATION.md)** : Guide d'installation du CLI et ajout au PATH
 - **[docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md)** : Guide complet pour obtenir les meilleures réponses de l'agent, comprendre les scores de pertinence, et optimiser vos questions
 - **[docs/RELEASE.md](docs/RELEASE.md)** : Instructions pour créer des releases CLI
