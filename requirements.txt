@@ -7,3 +7,7 @@ requests
 google-generativeai
 pillow
 openai>=1.0.0
+# Optionnel: Pour stockage Supabase (décommentez si vous utilisez Supabase)
+# supabase
+# psycopg2-binary
+# pgvector
