@@ -269,7 +269,19 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         # Build comprehensive description
                         description_parts = []
                         
-                        # Priority: description > alt > title > default
+                        # Build comprehensive description with priority order:
+                        # 1. Context (most relevant to query)
+                        # 2. Description (enhanced description from scraper)
+                        # 3. Alt/Title (basic image info)
+                        # 4. Document info and relevance
+                        
+                        # Start with context if available (most relevant to the query)
+                        if img.get('context'):
+                            context = img.get('context', '')[:150]  # Limit context length
+                            if context:
+                                description_parts.append(f"Contexte: {context}")
+                        
+                        # Add enhanced description from scraper (includes alt, title, caption, context)
                         if img.get('description'):
                             description_parts.append(img['description'])
                         elif img.get('alt'):
@@ -277,11 +289,15 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         elif img.get('title'):
                             description_parts.append(img['title'])
                         
-                        # Add document context if available
+                        # Add caption if available (figure captions are very descriptive)
+                        if img.get('caption'):
+                            description_parts.append(f"Légende: {img['caption']}")
+                        
+                        # Add document source for traceability
                         if img.get('document_title'):
                             description_parts.append(f"Source: {img['document_title']}")
                         
-                        # Add relevance score if available
+                        # Add relevance score to help agent prioritize
                         relevance_score = img.get('relevance_score')
                         if relevance_score is not None:
                             if relevance_score >= 80:
@@ -292,20 +308,9 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                                 relevance_label = "Modérément pertinent"
                             else:
                                 relevance_label = "Peu pertinent"
-                            description_parts.append(f"Pertinence: {relevance_label} ({relevance_score}%)")
+                            description_parts.append(f"Pertinence: {relevance_label}")
                         
-                        # Add caption if available
-                        if img.get('caption'):
-                            description_parts.append(f"Légende: {img['caption']}")
-                        
-                        # Combine into final description - prioritize context and description
-                        # This helps the agent understand what the image shows
-                        if img.get('context'):
-                            # Add context first as it's most relevant
-                            context = img.get('context', '')[:100]  # Limit context length
-                            if context:
-                                description_parts.insert(0, f"Contexte: {context}")
-                        
+                        # Combine into final description
                         alt_text = " | ".join(description_parts) if description_parts else f'Capture d\'écran {idx} de l\'interface PrimLogix'
                         
                         # Clean alt text for better display
