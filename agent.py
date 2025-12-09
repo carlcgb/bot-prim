@@ -67,9 +67,25 @@ IMPORTANT:
                 "search_knowledge_base": self._search_kb
             }
 
+        elif self.provider == "Local (Ollama/LocalAI)":
+            # Configure for Ollama/LocalAI (OpenAI-compatible API)
+            self.base_url = base_url or "http://localhost:11434/v1"
+            self.api_key = api_key or "ollama"  # Ollama doesn't require a real key
+            self.tool_map = {
+                "search_knowledge_base": self._search_kb
+            }
+            # Ollama will use OpenAI-compatible client
+            try:
+                from openai import OpenAI
+                self.ollama_client = OpenAI(
+                    base_url=self.base_url,
+                    api_key=self.api_key
+                )
+            except ImportError:
+                logger.warning("openai package not installed. Install with: pip install openai")
+                self.ollama_client = None
         else:
-            # Local provider (Ollama/LocalAI) - not implemented yet
-            raise ValueError(f"Provider '{self.provider}' not supported. Use 'Google Gemini'.")
+            raise ValueError(f"Provider '{self.provider}' not supported. Use 'Google Gemini' or 'Local (Ollama/LocalAI)'.")
 
 
     def _search_kb(self, query):
@@ -176,8 +192,10 @@ IMPORTANT:
     def run(self, messages):
         if self.provider == "Google Gemini":
             return self._run_gemini(messages)
+        elif self.provider == "Local (Ollama/LocalAI)":
+            return self._run_ollama(messages)
         else:
-            raise ValueError(f"Provider '{self.provider}' not supported. Use 'Google Gemini'.")
+            raise ValueError(f"Provider '{self.provider}' not supported.")
 
     def _run_gemini(self, messages):
         # Convert OpenAI messages to Gemini History
@@ -391,3 +409,125 @@ IMPORTANT:
                 return f"Gemini Error: Model '{last_model_tried}' not found. Last error: {last_error}. Please check your API key and try using 'gemini-1.5-flash', 'gemini-1.5-pro', or 'gemini-pro'."
         except Exception as list_error:
             return f"Gemini Error: Model '{last_model_tried}' not found. Last error: {last_error}. Could not list available models (error: {list_error}). Please check your API key and try using 'gemini-1.5-flash', 'gemini-1.5-pro', or 'gemini-pro'."
+
+    def _run_ollama(self, messages):
+        """Run agent with Ollama/LocalAI (OpenAI-compatible API)."""
+        if not self.ollama_client:
+            return "❌ Error: OpenAI client not available. Install with: pip install openai"
+        
+        # Convert messages to OpenAI format
+        openai_messages = []
+        for msg in messages:
+            role = msg.get('role')
+            content = msg.get('content', '')
+            
+            if role == 'user':
+                openai_messages.append({"role": "user", "content": content})
+            elif role == 'assistant':
+                openai_messages.append({"role": "assistant", "content": content})
+            elif role == 'tool':
+                # Tool messages for function calling
+                openai_messages.append({
+                    "role": "tool",
+                    "content": content,
+                    "tool_call_id": msg.get('tool_call_id', '')
+                })
+        
+        # Define tools for function calling
+        tools = [{
+            "type": "function",
+            "function": {
+                "name": "search_knowledge_base",
+                "description": """Recherche approfondie dans la base de connaissances de la documentation PrimLogix.
+                
+UTILISE CET OUTIL pour:
+- Trouver des solutions à des problèmes techniques ou erreurs
+- Comprendre comment utiliser une fonctionnalité spécifique
+- Obtenir des procédures détaillées étape par étape
+- Trouver des exemples de configuration ou d'utilisation
+- Rechercher des informations sur des champs, paramètres, ou options spécifiques
+
+IMPORTANT:
+- Utilise des termes techniques précis dans ta requête
+- Combine les informations de plusieurs résultats pour donner une réponse complète
+- Cite toujours les sources (URLs) dans ta réponse finale""",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Requête de recherche détaillée et spécifique. Utilise des termes techniques précis, codes d'erreur, noms de fonctionnalités."
+                        }
+                    },
+                    "required": ["query"]
+                }
+            }
+        }]
+        
+        max_iterations = 10
+        iteration = 0
+        
+        while iteration < max_iterations:
+            iteration += 1
+            
+            try:
+                # Call API with function calling
+                response = self.ollama_client.chat.completions.create(
+                    model=self.model_name,
+                    messages=openai_messages,
+                    tools=tools,
+                    tool_choice="auto",
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+                
+                message = response.choices[0].message
+                
+                # Check for function calls
+                if message.tool_calls:
+                    # Add assistant message with tool calls
+                    openai_messages.append({
+                        "role": "assistant",
+                        "content": message.content,
+                        "tool_calls": [
+                            {
+                                "id": tc.id,
+                                "type": tc.type,
+                                "function": {
+                                    "name": tc.function.name,
+                                    "arguments": tc.function.arguments
+                                }
+                            }
+                            for tc in message.tool_calls
+                        ]
+                    })
+                    
+                    # Execute function calls
+                    for tool_call in message.tool_calls:
+                        function_name = tool_call.function.name
+                        function_args = json.loads(tool_call.function.arguments)
+                        
+                        if function_name in self.tool_map:
+                            query = function_args.get('query', '')
+                            function_result = self.tool_map[function_name](query)
+                            
+                            # Add tool result
+                            openai_messages.append({
+                                "role": "tool",
+                                "content": str(function_result),
+                                "tool_call_id": tool_call.id
+                            })
+                    
+                    continue
+                
+                # Return text response
+                if message.content:
+                    return message.content
+                else:
+                    return "❌ No response content from model"
+                    
+            except Exception as e:
+                logger.error(f"Ollama API error: {e}")
+                return f"❌ Error calling Ollama API: {str(e)}\n\nMake sure Ollama is running: ollama serve\nAnd the model is installed: ollama pull {self.model_name}"
+        
+        return "❌ Error: Maximum iterations reached without getting a final response."

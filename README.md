@@ -10,10 +10,11 @@ Un agent d'assistance intelligent pour la documentation PrimLogix utilisant Gemi
 ## ✨ Fonctionnalités
 
 - 🔍 **Recherche intelligente** dans la base de connaissances PrimLogix (10 résultats pour meilleur contexte)
-- 🤖 **Support Gemini AI** pour des réponses détaillées et structurées
+- 🤖 **Support multi-IA gratuit** : Gemini (gratuit) et Ollama (100% gratuit, local)
 - 📊 **Scores de pertinence** pour évaluer la qualité des résultats
 - 📸 **Affichage de captures d'écran** de la documentation (jusqu'à 8 images)
 - 🎯 **Réponses optimisées pour le débogage** avec détails techniques et exemples
+- 🆓 **100% gratuit** - Aucune carte de crédit requise
 - 🇫🇷 **Interface en français**
 - 💻 **Interface CLI** pour utilisation en ligne de commande
 - 🌐 **Interface Web** via Streamlit
@@ -80,11 +81,27 @@ Puis ouvrez votre navigateur à l'adresse indiquée (généralement `http://loca
 
 ## 🔧 Configuration
 
+### Options AI Gratuites
+
+PRIMBOT supporte deux options gratuites :
+
+1. **Google Gemini** (Recommandé) - Plan gratuit généreux, rapide, facile à configurer
+   - Obtenez votre clé gratuite sur [Google AI Studio](https://aistudio.google.com/)
+   - 60 requêtes/minute, 1500 requêtes/jour gratuitement
+   - Pas de carte de crédit requise
+
+2. **Ollama** (100% gratuit, local) - Fonctionne sur votre machine, aucune clé API
+   - Téléchargez sur [ollama.ai](https://ollama.ai/)
+   - Installez un modèle: `ollama pull llama3.1`
+   - Lancez: `ollama serve`
+
+📖 **Guide complet**: Voir [docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md) pour tous les détails.
+
 ### Variables d'environnement / Secrets
 
 Le bot utilise les secrets/variables d'environnement suivants :
 
-- `GEMINI_API_KEY` - Clé API Google Gemini (requis)
+- `GEMINI_API_KEY` - Clé API Google Gemini (optionnel, seulement pour Gemini)
 
 #### Pour le développement local
 
@@ -157,6 +174,7 @@ Si vous voyez "Base de connaissances vide", utilisez le bouton d'initialisation 
 
 Toute la documentation est disponible dans le dossier [`docs/`](docs/) :
 
+- **[docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)** ⭐ : Guide complet des options AI gratuites (Gemini et Ollama)
 - **[docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md)** : Guide complet pour obtenir les meilleures réponses de l'agent, comprendre les scores de pertinence, et optimiser vos questions
 - **[docs/RELEASE.md](docs/RELEASE.md)** : Instructions pour créer des releases CLI
 - **[docs/DEPLOY_KB.md](docs/DEPLOY_KB.md)** : Guide de déploiement de la base de connaissances

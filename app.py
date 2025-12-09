@@ -89,17 +89,36 @@ if provider_type == "Google Gemini":
         # Environment variable (GitHub Actions, Cloudflare, etc.)
         default_gemini_key = os.getenv("GEMINI_API_KEY", "")
     
+    st.sidebar.info("🆓 **Gratuit** : Gemini offre un plan gratuit généreux. Obtenez votre clé sur [Google AI Studio](https://aistudio.google.com/)")
+    
     api_key = st.sidebar.text_input(
         "Gemini API Key", 
         value=default_gemini_key, 
         type="password", 
-        help="Get it from https://aistudio.google.com/. For Streamlit Cloud, set it in app settings. For other deployments, use GEMINI_API_KEY environment variable."
+        help="Get your FREE API key from https://aistudio.google.com/. No credit card required!"
     )
     base_url = None  # Gemini uses google-generativeai library directly, not OpenAI-compatible endpoint
-    model_name = st.sidebar.text_input("Model Name", value="gemini-2.5-flash", help="Available: gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash")
+    model_name = st.sidebar.selectbox(
+        "Model Name", 
+        ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+        index=0,
+        help="gemini-2.5-flash: Fastest and free. gemini-2.5-pro: Most capable (may have rate limits on free tier)"
+    )
 else:
-    base_url = st.sidebar.text_input("Base URL", value="http://localhost:11434/v1")
-    model_name = st.sidebar.text_input("Model Name", value="llama3.1")
+    st.sidebar.info("🆓 **100% Gratuit** : Ollama fonctionne localement, aucune clé API nécessaire!")
+    st.sidebar.markdown("**Installation:**\n1. Téléchargez [Ollama](https://ollama.ai/)\n2. Installez un modèle: `ollama pull llama3.1`\n3. Lancez: `ollama serve`")
+    
+    base_url = st.sidebar.text_input(
+        "Base URL", 
+        value="http://localhost:11434/v1",
+        help="URL de votre instance Ollama (par défaut: http://localhost:11434/v1)"
+    )
+    model_name = st.sidebar.selectbox(
+        "Model Name", 
+        ["llama3.1", "llama3.1:8b", "llama3.2", "mistral", "mixtral", "codellama"],
+        index=0,
+        help="Modèles recommandés: llama3.1 (équilibré), mistral (rapide), mixtral (puissant)"
+    )
     api_key = "ollama" # Dummy key for local
 
 # Initialize Chat History
