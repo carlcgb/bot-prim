@@ -1,25 +1,92 @@
-# PrimLogix Debug Agent
+# 🤖 PRIMBOT
+
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/release/carlcgb/bot-prim.svg)](https://github.com/carlcgb/bot-prim/releases)
+[![Streamlit](https://img.shields.io/badge/Streamlit-Cloud-orange.svg)](https://primbot.streamlit.app/)
 
 Un agent d'assistance intelligent pour la documentation PrimLogix utilisant Gemini AI.
 
-## Fonctionnalités
+## ✨ Fonctionnalités
 
-- 🔍 Recherche dans la base de connaissances PrimLogix
-- 🤖 Support pour Gemini AI, OpenAI et modèles locaux
-- 📸 Affichage de captures d'écran de la documentation
-- 🇫🇷 Interface en français
+- 🔍 **Recherche intelligente** dans la base de connaissances PrimLogix
+- 🤖 **Support Gemini AI** pour des réponses précises
+- 📸 **Affichage de captures d'écran** de la documentation
+- 🇫🇷 **Interface en français**
+- 💻 **Interface CLI** pour utilisation en ligne de commande
+- 🌐 **Interface Web** via Streamlit
 
-## Configuration
+## 🚀 Installation
+
+### Option 1: Installation depuis GitHub (Recommandé)
+
+```bash
+pip install git+https://github.com/carlcgb/bot-prim.git
+```
+
+### Option 2: Installation locale
+
+```bash
+git clone https://github.com/carlcgb/bot-prim.git
+cd bot-prim
+pip install -r requirements.txt
+pip install -e .
+```
+
+## 📖 Utilisation
+
+### Interface CLI (Ligne de commande)
+
+Une fois installé, utilisez la commande `primbot` :
+
+```bash
+# Mode interactif (chat) - Recommandé pour la première utilisation
+primbot --interactive
+
+# Le CLI va :
+# 1. Demander votre clé API Gemini si non configurée
+# 2. Vérifier et initialiser la base de connaissances si vide
+# 3. Lancer une session de chat interactive
+
+# Question unique
+primbot "comment changer mon mot de passe"
+
+# Avec options
+primbot "erreur de connexion" --model gemini-2.5-flash
+
+# Aide
+primbot --help
+```
+
+#### Variables d'environnement pour CLI
+
+```bash
+# Pour Gemini (par défaut)
+export GEMINI_API_KEY="votre_cle_api_gemini"
+
+# Puis utilisez simplement
+primbot --interactive
+```
+
+### Interface Web (Streamlit)
+
+```bash
+streamlit run app.py
+```
+
+Puis ouvrez votre navigateur à l'adresse indiquée (généralement `http://localhost:8501`).
+
+## 🔧 Configuration
 
 ### Variables d'environnement / Secrets
 
 Le bot utilise les secrets/variables d'environnement suivants :
 
-- `GEMINI_API_KEY` - Clé API Google Gemini (requis pour le provider Gemini)
+- `GEMINI_API_KEY` - Clé API Google Gemini (requis)
 
 #### Pour le développement local
 
-Créez un fichier `.streamlit/secrets.toml` (utilisez `.streamlit/secrets.toml.example` comme modèle) :
+Créez un fichier `.streamlit/secrets.toml` :
 
 ```toml
 GEMINI_API_KEY = "votre_cle_api_gemini"
@@ -38,75 +105,26 @@ GEMINI_API_KEY = "votre_cle_api_gemini"
 
 Configurez les secrets dans :
 - **GitHub**: Settings > Secrets and variables > Actions > New repository secret
-  - Nom: `GEMINI_API_KEY`
-  - Valeur: votre clé API Gemini
 - **Cloudflare Pages**: Settings > Environment variables
-  - Nom: `GEMINI_API_KEY`
-  - Valeur: votre clé API Gemini
 
-## Installation
+## 📚 Base de connaissances
 
-### Option 1: Installation depuis GitHub (Recommandé)
+### Initialisation
 
-```bash
-pip install git+https://github.com/carlcgb/bot-prim.git
-```
+La base de connaissances est automatiquement initialisée lors de la première utilisation du CLI.
 
-### Option 2: Installation locale
+Pour l'initialiser manuellement :
 
 ```bash
-git clone https://github.com/carlcgb/bot-prim.git
-cd bot-prim
-pip install -r requirements.txt
-pip install -e .
+python ingest.py
 ```
 
-### Option 3: Installation depuis PyPI (quand disponible)
+Cela va :
+1. Scraper la documentation PrimLogix depuis https://aide.primlogix.com/prim/fr/5-8/
+2. Extraire le contenu et les images
+3. Créer une base de données vectorielle avec ChromaDB
 
-```bash
-pip install primbot
-```
-
-## Utilisation
-
-### Interface Web (Streamlit)
-
-```bash
-streamlit run app.py
-```
-
-### Interface CLI (Ligne de commande)
-
-Une fois installé, utilisez la commande `primbot` :
-
-```bash
-# Mode interactif (chat)
-primbot --interactive
-
-# Question unique
-primbot "comment changer mon mot de passe"
-
-# Avec options
-primbot "erreur de connexion" --provider gemini --model gemini-2.5-flash
-
-# Utiliser OpenAI
-primbot "question" --provider openai --key YOUR_OPENAI_KEY
-
-# Aide
-primbot --help
-```
-
-#### Variables d'environnement pour CLI
-
-```bash
-# Pour Gemini (par défaut)
-export GEMINI_API_KEY="votre_cle_api_gemini"
-
-# Pour OpenAI
-export OPENAI_API_KEY="votre_cle_openai"
-```
-
-### Ingestion de la documentation
+### Mise à jour
 
 Pour mettre à jour la base de connaissances :
 
@@ -114,60 +132,38 @@ Pour mettre à jour la base de connaissances :
 python ingest.py
 ```
 
-## Déploiement
+## 🌐 Déploiement
 
 ### Streamlit Cloud (Recommandé)
 
-**⚠️ IMPORTANT : Si vous voyez "This repository does not exist"**
+1. Poussez votre code sur GitHub
+2. Connectez votre repo à [Streamlit Cloud](https://share.streamlit.io)
+3. **Pour l'URL GitHub**, utilisez l'une de ces options :
+   - **Option A (Recommandée)** : Cliquez sur "Switch to interactive picker" et sélectionnez votre repo et le fichier `app.py`
+   - **Option B** : Utilisez l'URL directe : `https://github.com/carlcgb/bot-prim/blob/main/app.py`
+4. Dans les paramètres de l'app, section "Secrets", ajoutez :
+   ```toml
+   GEMINI_API_KEY = "votre_cle_api_gemini"
+   ```
 
-Votre repository est probablement **privé**. Streamlit Cloud doit être autorisé à y accéder :
+⚠️ **Note importante** : Si vous voyez "Base de connaissances vide" dans l'app déployée, utilisez le bouton d'initialisation dans l'interface ou incluez le dossier `chroma_db/` dans le repository.
 
-1. **Autoriser Streamlit Cloud** :
-   - Allez sur https://github.com/settings/applications
-   - Cliquez sur "Authorized GitHub Apps" (ou "Installed GitHub Apps")
-   - Trouvez "Streamlit" et cliquez sur "Configure"
-   - Assurez-vous que `carlcgb/bot-prim` est dans la liste des repositories autorisés
-   - Si Streamlit n'apparaît pas, vous serez invité à l'autoriser lors du premier déploiement
+## 📁 Structure du projet
 
-2. **Déployer sur Streamlit Cloud** :
-   - Allez sur [Streamlit Cloud](https://share.streamlit.io)
-   - Cliquez sur "New app"
-   - **Repository** : `carlcgb/bot-prim` (sans https://github.com/)
-   - **Branch** : `main`
-   - **Main file path** : `app.py` (⚠️ pas `streamlit_app.py`)
-   - Cliquez sur "Deploy"
+```
+bot-prim/
+├── app.py                 # Interface Streamlit principale
+├── primbot_cli.py         # Interface CLI
+├── agent.py               # Agent AI avec support Gemini
+├── knowledge_base.py       # Gestion de la base de données vectorielle
+├── scraper.py             # Scraping de la documentation PrimLogix
+├── ingest.py              # Script d'ingestion des données
+├── requirements.txt       # Dépendances Python
+├── setup.py               # Configuration pour installation pip
+└── README.md              # Ce fichier
+```
 
-3. **Configurer les secrets** :
-   - Dans les paramètres de l'app, section "Secrets", ajoutez :
-     ```toml
-     GEMINI_API_KEY = "votre_cle_api_gemini"
-     ```
-
-**Alternative : Rendre le repository public**
-- Si vous préférez, vous pouvez rendre le repository public dans les paramètres GitHub
-- ⚠️ Assurez-vous qu'aucune clé API n'est dans le code (déjà fait ✅)
-
-### Cloudflare Pages
-
-Note: Cloudflare Pages est principalement pour les sites statiques. Pour une app Streamlit, considérez:
-- Streamlit Cloud (recommandé)
-- Heroku
-- Railway
-- Render
-
-Si vous utilisez Cloudflare Workers/Pages avec une API backend, configurez la variable d'environnement `GEMINI_API_KEY` dans les paramètres.
-
-## Structure du projet
-
-- `app.py` - Interface Streamlit principale
-- `agent.py` - Agent AI avec support Gemini/OpenAI
-- `knowledge_base.py` - Gestion de la base de données vectorielle
-- `scraper.py` - Scraping de la documentation PrimLogix
-- `ingest.py` - Script d'ingestion des données
-- `.streamlit/config.toml` - Configuration Streamlit
-- `.streamlit/secrets.toml.example` - Exemple de fichier secrets (local)
-
-## Sécurité
+## 🔒 Sécurité
 
 ⚠️ **Important**: Ne commitez JAMAIS de clés API dans le code. Utilisez toujours :
 - Streamlit secrets pour Streamlit Cloud
@@ -176,6 +172,14 @@ Si vous utilisez Cloudflare Workers/Pages avec une API backend, configurez la va
 
 Le fichier `.gitignore` est configuré pour exclure les fichiers contenant des secrets.
 
-## Licence
+## 📝 Licence
 
 Propriétaire - Dev-NTIC
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+
+## 📞 Support
+
+Pour toute question ou problème, ouvrez une issue sur [GitHub](https://github.com/carlcgb/bot-prim/issues).

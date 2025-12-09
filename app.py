@@ -38,16 +38,13 @@ else:
 # Sidebar Configuration
 st.sidebar.header("⚙️ Configuration")
 
-provider_type = st.sidebar.radio("LLM Provider", ["OpenAI", "Local (Ollama/LocalAI)", "Google Gemini"])
+provider_type = st.sidebar.radio("LLM Provider", ["Google Gemini", "Local (Ollama/LocalAI)"])
 
 api_key = ""
 base_url = None
-model_name = "gpt-3.5-turbo"
+model_name = "gemini-2.5-flash"
 
-if provider_type == "OpenAI":
-    api_key = st.sidebar.text_input("OpenAI API Key", type="password")
-    model_name = st.sidebar.text_input("Model Name", value="gpt-3.5-turbo")
-elif provider_type == "Google Gemini":
+if provider_type == "Google Gemini":
     # Get Gemini API key from Streamlit secrets (for Streamlit Cloud) or environment variable (for other deployments)
     # Priority: Streamlit secrets > Environment variable > User input
     default_gemini_key = ""

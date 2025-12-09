@@ -1,4 +1,4 @@
-# Guide de Release PRIMBOT CLI
+# 📦 Guide de Release PRIMBOT CLI
 
 ## Créer une Release GitHub
 
@@ -16,7 +16,7 @@
      ### Nouvelles fonctionnalités
      - Interface CLI pour utilisation en ligne de commande
      - Mode interactif pour sessions de chat
-     - Support multi-providers (Gemini, OpenAI, Local)
+     - Support Gemini AI
      - Installation via pip depuis GitHub
      
      ### Installation

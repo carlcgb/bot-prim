@@ -9,8 +9,6 @@ warnings.filterwarnings('ignore', category=RuntimeWarning, message='.*duckduckgo
 warnings.filterwarnings('ignore', category=RuntimeWarning, message='.*ALTS.*')
 warnings.filterwarnings('ignore', message='.*ALTS.*')
 
-from openai import OpenAI
-
 from knowledge_base import query_knowledge_base
 import json
 
@@ -22,30 +20,9 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 class PrimAgent:
-    def __init__(self, api_key, base_url=None, model="gpt-3.5-turbo", provider="OpenAI"):
+    def __init__(self, api_key, base_url=None, model="gemini-2.5-flash", provider="Google Gemini"):
         self.provider = provider
         self.model_name = model
-        
-        # Tools definition for OpenAI - only knowledge base search
-        self.openai_tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "search_knowledge_base",
-                    "description": "Recherche dans la base de connaissances de la documentation PrimLogix pour obtenir de l'aide sur les fonctionnalités du logiciel PRIM, les questions, les erreurs ou les procédures. Utilisez cet outil pour trouver des informations dans la documentation d'aide PrimLogix. Répondez toujours en français et citez les sources trouvées.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "La requête de recherche liée à la documentation PrimLogix."
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            }
-        ]
 
         if self.provider == "Google Gemini":
             # Configure Gemini API
@@ -79,7 +56,8 @@ class PrimAgent:
             }
 
         else:
-            self.client = OpenAI(api_key=api_key, base_url=base_url)
+            # Local provider (Ollama/LocalAI) - not implemented yet
+            raise ValueError(f"Provider '{self.provider}' not supported. Use 'Google Gemini'.")
 
 
     def _search_kb(self, query):
@@ -155,43 +133,7 @@ class PrimAgent:
         if self.provider == "Google Gemini":
             return self._run_gemini(messages)
         else:
-            return self._run_openai(messages)
-
-    def _run_openai(self, messages):
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            tools=self.openai_tools,
-            tool_choice="auto"
-        )
-        
-        message = response.choices[0].message
-        
-        if message.tool_calls:
-            messages.append(message)
-            
-            for tool_call in message.tool_calls:
-                function_name = tool_call.function.name
-                arguments = json.loads(tool_call.function.arguments)
-                
-                result_content = ""
-                if function_name == "search_knowledge_base":
-                    result_content = self._search_kb(arguments['query'])
-                
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "name": function_name,
-                    "content": result_content
-                })
-            
-            final_response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages
-            )
-            return final_response.choices[0].message.content
-        
-        return message.content
+            raise ValueError(f"Provider '{self.provider}' not supported. Use 'Google Gemini'.")
 
     def _run_gemini(self, messages):
         # Convert OpenAI messages to Gemini History

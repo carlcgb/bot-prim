@@ -18,7 +18,7 @@ def main():
 Examples:
   primbot "comment changer mon mot de passe"
   primbot "comment programmer les API" --model gemini-2.5-flash
-  primbot "erreur de connexion" --provider openai --key YOUR_KEY
+  primbot --interactive
         """
     )
     
@@ -30,7 +30,7 @@ Examples:
     
     parser.add_argument(
         '--provider',
-        choices=['gemini', 'openai', 'local'],
+        choices=['gemini', 'local'],
         default='gemini',
         help='LLM provider to use (default: gemini)'
     )
@@ -75,8 +75,6 @@ Examples:
     if not api_key:
         if args.provider == 'gemini':
             api_key = os.getenv('GEMINI_API_KEY', '')
-        elif args.provider == 'openai':
-            api_key = os.getenv('OPENAI_API_KEY', '')
         else:
             api_key = 'ollama'  # Dummy for local
     
@@ -94,27 +92,20 @@ Examples:
             print(f"❌ Erreur: Clé API requise pour {args.provider}.", file=sys.stderr)
             sys.exit(1)
         
-        # Optionally save to environment for this session
-        if args.provider == 'gemini':
-            os.environ['GEMINI_API_KEY'] = api_key
-        elif args.provider == 'openai':
-            os.environ['OPENAI_API_KEY'] = api_key
-        
+        # Save to environment for this session
+        os.environ['GEMINI_API_KEY'] = api_key
         print("✅ Clé API configurée\n", file=sys.stderr)
     
     # Determine model
     if not args.model:
         if args.provider == 'gemini':
             args.model = 'gemini-2.5-flash'
-        elif args.provider == 'openai':
-            args.model = 'gpt-3.5-turbo'
         else:
             args.model = 'llama3.1'
     
     # Map provider names
     provider_map = {
         'gemini': 'Google Gemini',
-        'openai': 'OpenAI',
         'local': 'Local (Ollama/LocalAI)'
     }
     provider = provider_map[args.provider]
