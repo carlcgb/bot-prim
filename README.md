@@ -7,6 +7,64 @@
 
 Un agent d'assistance intelligent pour la documentation PrimLogix utilisant Gemini AI.
 
+## 📖 À Propos
+
+**PRIMBOT** est un assistant intelligent spécialement conçu pour aider les utilisateurs de PrimLogix à résoudre leurs problèmes techniques et à naviguer dans la documentation.
+
+### 🎯 Objectif
+
+PRIMBOT vise à :
+- **Simplifier l'accès** à la documentation PrimLogix
+- **Accélérer la résolution** des problèmes techniques
+- **Fournir des réponses contextuelles** avec captures d'écran pertinentes
+- **Offrir une solution 100% gratuite** sans nécessiter de carte de crédit
+
+### ✨ Caractéristiques Principales
+
+- 🔍 **Recherche intelligente** dans toute la documentation PrimLogix
+- 📸 **Captures d'écran pertinentes** extraites automatiquement de l'aide en ligne
+- 🤖 **Support multi-IA** : Gemini (gratuit) et Ollama (100% gratuit, local)
+- 💻 **Interface CLI** pour utilisation en ligne de commande
+- 🌐 **Interface Web** via Streamlit pour une utilisation intuitive
+- 🎯 **Réponses optimisées** pour le débogage avec détails techniques
+
+### 🛠️ Technologies Utilisées
+
+- **AI/ML**: Google Gemini API, Ollama (OpenAI-compatible)
+- **Vector Database**: ChromaDB pour la recherche sémantique
+- **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)
+- **Web Framework**: Streamlit pour l'interface web
+- **Scraping**: BeautifulSoup4, html2text
+- **Language**: Python 3.8+
+
+### 👥 Public Cible
+
+- Utilisateurs de PrimLogix cherchant de l'aide
+- Administrateurs système PrimLogix
+- Support technique
+- Développeurs intégrant PrimLogix
+
+### 🆓 Gratuit et Open Source
+
+PRIMBOT est **100% gratuit** :
+- ✅ Aucune carte de crédit requise
+- ✅ Plan gratuit Gemini généreux (60 req/min, 1500 req/jour)
+- ✅ Option Ollama 100% locale et gratuite
+- ✅ Code source ouvert sur GitHub
+
+### 📊 Statistiques
+
+- 📚 **Documentation indexée** : Toute la documentation PrimLogix (aide.primlogix.com/prim/fr/5-8/)
+- 🖼️ **Images filtrées** : Seules les captures d'écran pertinentes (≥100px, filtrage automatique des icônes)
+- 🔍 **Recherche** : 10 résultats par requête pour un contexte optimal
+- 📸 **Images par réponse** : Jusqu'à 8 captures d'écran les plus pertinentes
+
+### 🚀 Développement
+
+Développé par **Dev-NTIC** pour améliorer l'expérience utilisateur PrimLogix.
+
+**Contributions bienvenues !** N'hésitez pas à ouvrir une issue ou une pull request.
+
 ## ✨ Fonctionnalités
 
 - 🔍 **Recherche intelligente** dans la base de connaissances PrimLogix (10 résultats pour meilleur contexte)
@@ -254,8 +312,9 @@ Seules les images pertinentes et de qualité sont stockées pour compléter les 
 
 Toute la documentation est disponible dans le dossier [`docs/`](docs/) :
 
-- **[docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)** ⭐ : Guide complet des options AI gratuites (Gemini et Ollama)
+- **[docs/CLI_USAGE.md](docs/CLI_USAGE.md)** ⭐ : **Guide complet étape par étape** pour utiliser le CLI (installation, configuration, utilisation)
 - **[docs/CLI_INSTALLATION.md](docs/CLI_INSTALLATION.md)** : Guide d'installation du CLI et ajout au PATH
+- **[docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)** ⭐ : Guide complet des options AI gratuites (Gemini et Ollama)
 - **[docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md)** : Guide complet pour obtenir les meilleures réponses de l'agent, comprendre les scores de pertinence, et optimiser vos questions
 - **[docs/RELEASE.md](docs/RELEASE.md)** : Instructions pour créer des releases CLI
 - **[docs/DEPLOY_KB.md](docs/DEPLOY_KB.md)** : Guide de déploiement de la base de connaissances

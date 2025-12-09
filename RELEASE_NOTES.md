@@ -1,6 +1,6 @@
-# 📦 PRIMBOT v1.0.2 - Installation Guide
+# 📦 PRIMBOT v1.0.2 - Guide d'Installation et Utilisation
 
-## 🚀 Installation rapide
+## 🚀 Installation Rapide
 
 ### Option 1: Installation depuis GitHub (Recommandé)
 
@@ -40,44 +40,111 @@ primbot --help
 
 Si la commande n'est pas trouvée, consultez [docs/CLI_INSTALLATION.md](https://github.com/carlcgb/bot-prim/blob/main/docs/CLI_INSTALLATION.md) pour ajouter `primbot` à votre PATH.
 
-## 🎯 Première utilisation
+## 🎯 Première Utilisation - Guide Étape par Étape
 
-### 1. Configuration
+### Étape 1: Obtenir une Clé API Gemini (Gratuite)
 
+1. Allez sur [Google AI Studio](https://aistudio.google.com/)
+2. Connectez-vous avec votre compte Google
+3. Cliquez sur "Get API Key"
+4. Créez une nouvelle clé API
+5. Copiez la clé (format: `AIzaSy...`)
+
+**Note:** Le plan gratuit offre 60 requêtes/minute et 1500 requêtes/jour.
+
+### Étape 2: Configurer PRIMBOT
+
+**Option A: Configuration Interactive (Recommandée)**
 ```bash
-# Configuration interactive
 primbot config
+```
+Suivez les prompts pour entrer votre clé API Gemini.
 
-# Ou configurer directement la clé API Gemini
-primbot config --gemini-key VOTRE_CLE_API
+**Option B: Configuration Directe**
+```bash
+primbot config --gemini-key AIzaSyVOTRE_CLE_ICI
 ```
 
-**Obtenez votre clé API Gemini gratuite :** https://aistudio.google.com/
+**Vérifier la configuration:**
+```bash
+primbot config --show
+```
 
-### 2. Initialiser la base de connaissances
+### Étape 3: Initialiser la Base de Connaissances
 
 ```bash
 primbot ingest
 ```
 
-Cela va scraper la documentation PrimLogix et créer la base de connaissances (5-10 minutes).
+**Ce qui se passe:**
+- ✅ Scraping de la documentation PrimLogix
+- ✅ Extraction du contenu et des captures d'écran pertinentes
+- ✅ Création de la base de données vectorielle
+- ✅ Indexation pour la recherche rapide
 
-### 3. Utiliser PRIMBOT
+**Durée:** 5-10 minutes (une seule fois)
 
+### Étape 4: Utiliser PRIMBOT
+
+**Question unique:**
 ```bash
-# Question unique
 primbot ask "comment changer mon mot de passe"
-
-# Mode interactif (chat)
-primbot ask --interactive
 ```
 
-## 📋 Commandes disponibles
+**Mode interactif (chat):**
+```bash
+primbot ask --interactive
+# ou
+primbot ask -i
+```
 
-- `primbot config` - Configurer l'API Gemini et Ollama
-- `primbot ingest` - Initialiser la base de connaissances
-- `primbot ask "question"` - Poser une question
-- `primbot ask --interactive` - Mode chat interactif
+**Exemple de session interactive:**
+```
+$ primbot ask -i
+🤖 PRIMBOT - Mode interactif
+Tapez 'quit' pour quitter.
+
+> comment créer un utilisateur
+[PRIMBOT répond avec détails et captures d'écran...]
+
+> et lui donner des permissions spécifiques?
+[PRIMBOT répond en contexte...]
+
+> quit
+Au revoir!
+```
+
+📖 **Guide complet:** Consultez [docs/CLI_USAGE.md](docs/CLI_USAGE.md) pour un guide détaillé étape par étape.
+
+## 📋 Commandes Disponibles
+
+### Configuration
+```bash
+primbot config                    # Configuration interactive
+primbot config --show            # Afficher la configuration actuelle
+primbot config --gemini-key KEY  # Configurer la clé API Gemini
+primbot config --ollama-url URL  # Configurer Ollama (local)
+```
+
+### Base de Connaissances
+```bash
+primbot ingest                   # Initialiser/mettre à jour la base
+```
+
+### Questions
+```bash
+primbot ask "question"           # Poser une question unique
+primbot ask --interactive        # Mode chat interactif
+primbot ask "q" --model MODEL    # Utiliser un modèle spécifique
+primbot ask "q" --provider PROV  # Utiliser un fournisseur spécifique
+```
+
+### Aide
+```bash
+primbot --help                   # Aide générale
+primbot config --help           # Aide pour config
+primbot ask --help              # Aide pour ask
+```
 
 ## 🔧 Configuration
 
@@ -89,7 +156,8 @@ La configuration est sauvegardée dans `~/.primbot/config.json` et inclut :
 
 ## 📚 Documentation
 
-- **[Guide d'installation CLI](https://github.com/carlcgb/bot-prim/blob/main/docs/CLI_INSTALLATION.md)** - Instructions détaillées pour Windows/Linux/macOS
+- **[Guide d'utilisation CLI](https://github.com/carlcgb/bot-prim/blob/main/docs/CLI_USAGE.md)** ⭐ - **Guide complet étape par étape** (installation, configuration, utilisation, exemples)
+- **[Guide d'installation CLI](https://github.com/carlcgb/bot-prim/blob/main/docs/CLI_INSTALLATION.md)** - Instructions détaillées pour Windows/Linux/macOS et ajout au PATH
 - **[Guide AI gratuit](https://github.com/carlcgb/bot-prim/blob/main/docs/FREE_AI_GUIDE.md)** - Options AI gratuites (Gemini et Ollama)
 - **[Guide de l'agent](https://github.com/carlcgb/bot-prim/blob/main/docs/AGENT_GUIDE.md)** - Obtenir les meilleures réponses
 
@@ -101,11 +169,14 @@ Pour toute question ou problème :
 
 ## 🎉 Nouveautés de cette version
 
-- ✨ CLI amélioré avec sous-commandes (`config`, `ingest`, `ask`)
-- 📁 Gestion de configuration persistante (`~/.primbot/config.json`)
-- 🔧 Support Ollama amélioré (100% gratuit, local)
-- 🧹 Code nettoyé et optimisé
-- 📦 Package installable via pip
+- ✨ **CLI amélioré** avec sous-commandes (`config`, `ingest`, `ask`)
+- 📁 **Configuration persistante** (`~/.primbot/config.json`)
+- 🔧 **Support Ollama amélioré** (100% gratuit, local)
+- 📸 **Filtrage intelligent des images** - Seules les captures d'écran pertinentes (exclusion automatique des icônes/logos)
+- 🎯 **Images pertinentes uniquement** - Filtrage par taille (≥100px) et mots-clés
+- 🧹 **Code nettoyé et optimisé**
+- 📦 **Package installable via pip**
+- 📖 **Documentation complète** - Guide étape par étape dans `docs/CLI_USAGE.md`
 
 ---
 
