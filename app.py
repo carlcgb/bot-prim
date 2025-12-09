@@ -131,81 +131,73 @@ for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             content = message["content"]
             
-            # Check if content contains screenshots section
-            if "[SCREENSHOTS]" in content:
-                # Split content into text and images
-                parts = content.split("[SCREENSHOTS]")
-                text_content = parts[0].strip()
-                image_section = parts[1].strip() if len(parts) > 1 else ""
+            # Parse and display images inline with text (same as new responses)
+            import re
+            
+            # Find all markdown images in the content
+            image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+            image_matches = list(re.finditer(image_pattern, content))
+            
+            if image_matches:
+                # Split content into parts (text and images)
+                parts = []
+                last_end = 0
+                images_to_display = []
                 
-                # Display text content
-                if text_content:
-                    st.markdown(text_content)
-                
-                # Display images
-                if image_section:
-                    # Extract image URLs and captions from markdown format ![alt](url)
-                    import re
-                    # Match full markdown image syntax to get both caption and URL
-                    image_pattern = r'!\[(.*?)\]\((.*?)\)'
-                    image_matches = re.findall(image_pattern, image_section)
+                for match in image_matches:
+                    # Add text before image
+                    if match.start() > last_end:
+                        parts.append(("text", content[last_end:match.start()]))
                     
-                    if image_matches:
-                        st.markdown("### 📸 Captures d'écran de la documentation")
-                        st.markdown(f"*{len(image_matches)} capture(s) d'écran disponible(s)*")
+                    # Extract image info
+                    alt_text = match.group(1)
+                    img_url = match.group(2).strip()
+                    
+                    if img_url and (img_url.startswith('http://') or img_url.startswith('https://')):
+                        images_to_display.append({
+                            "url": img_url,
+                            "alt": alt_text,
+                            "position": match.start()
+                        })
+                        # Add placeholder for image
+                        parts.append(("image", len(images_to_display) - 1))
+                    
+                    last_end = match.end()
+                
+                # Add remaining text
+                if last_end < len(content):
+                    parts.append(("text", content[last_end:]))
+                
+                # Display parts in order (text and images inline)
+                for part_type, part_content in parts:
+                    if part_type == "text" and part_content.strip():
+                        st.markdown(part_content)
+                    elif part_type == "image":
+                        img_idx = part_content
+                        img_info = images_to_display[img_idx]
                         
-                        # Filter and validate URLs with captions
-                        valid_images = []
-                        for caption, img_url in image_matches[:12]:  # Increased to 12 images
-                            img_url = img_url.strip()
-                            if img_url and (img_url.startswith('http://') or img_url.startswith('https://')):
-                                valid_images.append((caption.strip() or f"Capture {len(valid_images)+1}", img_url))
-                        
-                        if valid_images:
-                            # Display images in a grid (2 columns for better visibility)
-                            num_cols = min(2, len(valid_images))
-                            cols = st.columns(num_cols)
+                        try:
+                            # Download and display image inline
+                            import requests
+                            from io import BytesIO
+                            from PIL import Image
                             
-                            for idx, (caption, img_url) in enumerate(valid_images):
-                                col_idx = idx % num_cols
-                                with cols[col_idx]:
-                                    try:
-                                        # Try to display image with timeout
-                                        import requests
-                                        from io import BytesIO
-                                        from PIL import Image
-                                        
-                                        # Download image with better error handling
-                                        headers = {
-                                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                                        }
-                                        img_response = requests.get(img_url, headers=headers, timeout=10, stream=True)
-                                        img_response.raise_for_status()
-                                        
-                                        # Load and display
-                                        img = Image.open(BytesIO(img_response.content))
-                                        
-                                        # Use caption from markdown or default
-                                        display_caption = caption if caption and not caption.startswith("Capture d'écran") else f"Capture {idx+1}"
-                                        
-                                        st.image(img, caption=display_caption, use_container_width=True)
-                                        
-                                        # Add link to original image
-                                        st.caption(f"[🔗 Ouvrir l'image]({img_url})")
-                                    except requests.exceptions.Timeout:
-                                        st.warning(f"⏱️ Timeout lors du chargement")
-                                        st.markdown(f"[📷 Voir l'image]({img_url})")
-                                    except requests.exceptions.RequestException as e:
-                                        st.warning(f"⚠️ Erreur de chargement")
-                                        st.markdown(f"[📷 Voir l'image]({img_url})")
-                                    except Exception as e:
-                                        # If image fails to load, show as link
-                                        st.warning(f"⚠️ Impossible d'afficher l'image")
-                                        st.markdown(f"[📷 Voir l'image]({img_url})")
-                                        if "PIL" not in str(e):  # Don't show PIL errors to user
-                                            st.caption(f"Erreur: {str(e)[:50]}")
+                            headers = {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            }
+                            img_response = requests.get(img_info["url"], headers=headers, timeout=10, stream=True)
+                            img_response.raise_for_status()
+                            
+                            img = Image.open(BytesIO(img_response.content))
+                            caption = img_info["alt"] if img_info["alt"] else f"Capture d'écran {img_idx + 1}"
+                            
+                            st.image(img, caption=caption, use_container_width=True)
+                            st.caption(f"[🔗 Ouvrir l'image]({img_info['url']})")
+                        except Exception as e:
+                            # If image fails, show as markdown link
+                            st.markdown(f"[📷 {img_info['alt'] or 'Voir l\'image'}]({img_info['url']})")
             else:
-                # Regular content without images
+                # No images, display regular content
                 st.markdown(content)
 
 # Chat Input
