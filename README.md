@@ -46,16 +46,64 @@ Configurez les secrets dans :
 
 ## Installation
 
+### Option 1: Installation depuis GitHub (Recommandé)
+
 ```bash
+pip install git+https://github.com/carlcgb/bot-prim.git
+```
+
+### Option 2: Installation locale
+
+```bash
+git clone https://github.com/carlcgb/bot-prim.git
+cd bot-prim
 pip install -r requirements.txt
+pip install -e .
+```
+
+### Option 3: Installation depuis PyPI (quand disponible)
+
+```bash
+pip install primbot
 ```
 
 ## Utilisation
 
-### Développement local
+### Interface Web (Streamlit)
 
 ```bash
 streamlit run app.py
+```
+
+### Interface CLI (Ligne de commande)
+
+Une fois installé, utilisez la commande `primbot` :
+
+```bash
+# Mode interactif (chat)
+primbot --interactive
+
+# Question unique
+primbot "comment changer mon mot de passe"
+
+# Avec options
+primbot "erreur de connexion" --provider gemini --model gemini-2.5-flash
+
+# Utiliser OpenAI
+primbot "question" --provider openai --key YOUR_OPENAI_KEY
+
+# Aide
+primbot --help
+```
+
+#### Variables d'environnement pour CLI
+
+```bash
+# Pour Gemini (par défaut)
+export GEMINI_API_KEY="votre_cle_api_gemini"
+
+# Pour OpenAI
+export OPENAI_API_KEY="votre_cle_openai"
 ```
 
 ### Ingestion de la documentation
