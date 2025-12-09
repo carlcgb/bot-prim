@@ -54,9 +54,17 @@ def scrape_page(url):
                 
                 # Only include images from the same domain or relative paths
                 if 'aide.primlogix.com' in img_url or img_src.startswith('/') or img_src.startswith('./'):
-                    # Ensure absolute URL
+                    # Ensure absolute URL - always convert to full URL
                     if not img_url.startswith('http'):
-                        img_url = urljoin(BASE_URL, img_url)
+                        # If still relative, use the page URL as base
+                        img_url = urljoin(url, img_src)
+                        if not img_url.startswith('http'):
+                            # Final fallback to BASE_URL
+                            img_url = urljoin(BASE_URL, img_src)
+                    
+                    # Final check - ensure it's absolute
+                    if not img_url.startswith('http'):
+                        continue  # Skip if we can't make it absolute
                     
                     # Extract context around the image for better understanding
                     # Get parent element and nearby text

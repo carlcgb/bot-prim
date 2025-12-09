@@ -165,12 +165,34 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         for img in images:
                             # Convert relative URLs to absolute URLs immediately
                             img_url = img.get('url', '')
+                            original_url = img_url
+                            
                             if img_url and not img_url.startswith('http'):
                                 # Convert relative URL to absolute using document URL
                                 base_url = source if source.startswith('http') else 'https://aide.primlogix.com/prim/fr/5-8/'
+                                
+                                # Handle ./ prefix - urljoin doesn't work well with it
+                                if img_url.startswith('./'):
+                                    img_url = img_url[2:]  # Remove ./ prefix
+                                elif img_url.startswith('/'):
+                                    # Absolute path from domain root
+                                    base_url = 'https://aide.primlogix.com'
+                                
+                                # Use urljoin to combine
                                 img_url = urljoin(base_url, img_url)
-                                img['url'] = img_url  # Update URL in the image dict
+                                
+                                # Final check - ensure it's absolute (urljoin should work, but double-check)
+                                if not img_url.startswith('http'):
+                                    # Fallback: construct manually
+                                    if base_url.endswith('/'):
+                                        img_url = base_url + img_url.lstrip('/')
+                                    else:
+                                        img_url = base_url + '/' + img_url.lstrip('/')
+                                
+                                # CRITICAL: Update the URL in the dict BEFORE adding to all_images
+                                img['url'] = img_url
                             
+                            # Use the (now absolute) URL for deduplication
                             if img_url not in seen_urls:
                                 seen_urls.add(img_url)  # Use absolute URL for deduplication
                                 # Add document context to image for better understanding
@@ -254,15 +276,41 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         
                         # Add image with enhanced description
                         # Ensure absolute URL - convert relative URLs to absolute
-                        img_url = img['url']
+                        # CRITICAL: Always get fresh URL from dict and convert if needed
+                        img_url = img.get('url', '')
+                        
+                        # Force conversion to absolute URL
                         if not img_url.startswith('http'):
                             # Convert relative URL to absolute using document URL
                             base_url = img.get('document_url', 'https://aide.primlogix.com/prim/fr/5-8/')
                             if not base_url.startswith('http'):
                                 base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
+                            
+                            # Handle ./ prefix - urljoin doesn't work well with it
+                            if img_url.startswith('./'):
+                                img_url = img_url[2:]  # Remove ./ prefix
+                            elif img_url.startswith('/'):
+                                # Absolute path from domain root
+                                base_url = 'https://aide.primlogix.com'
+                            
+                            # Use urljoin
                             img_url = urljoin(base_url, img_url)
-                            # Update the image URL in the dict for consistency
+                            
+                            # Final check - ensure it's absolute (should always be after urljoin, but double-check)
+                            if not img_url.startswith('http'):
+                                # Fallback: construct manually
+                                if base_url.endswith('/'):
+                                    img_url = base_url + img_url.lstrip('/')
+                                else:
+                                    img_url = base_url + '/' + img_url.lstrip('/')
+                            
+                            # Update in dict for consistency
                             img['url'] = img_url
+                        
+                        # Final safety check before adding to markdown
+                        if not img_url.startswith('http'):
+                            # Last resort: use base URL
+                            img_url = 'https://aide.primlogix.com/prim/fr/5-8/' + img_url.lstrip('./')
                         
                         image_section += f"### Image {idx}\n\n"
                         image_section += f"![{alt_text}]({img_url})\n\n"
@@ -521,10 +569,29 @@ IMPORTANT:
                 
                 # Add extracted images to the response if they exist
                 if final_response and hasattr(self, '_extracted_images') and self._extracted_images:
-                    # Remove duplicates while preserving order
+                    # Remove duplicates while preserving order and convert relative URLs to absolute
                     seen_images = set()
                     unique_images = []
+                    base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
+                    
                     for alt, url in self._extracted_images:
+                        # Convert relative URLs to absolute URLs
+                        if url and not url.startswith('http'):
+                            # Handle ./ prefix - urljoin doesn't work well with it
+                            if url.startswith('./'):
+                                url = url[2:]  # Remove ./ prefix
+                            elif url.startswith('/'):
+                                # Absolute path from domain root
+                                base_url = 'https://aide.primlogix.com'
+                            url = urljoin(base_url, url)
+                            # Final check - ensure it's absolute
+                            if not url.startswith('http'):
+                                # Fallback: construct manually
+                                if base_url.endswith('/'):
+                                    url = base_url + url.lstrip('/')
+                                else:
+                                    url = base_url + '/' + url.lstrip('/')
+                        
                         if url not in seen_images:
                             seen_images.add(url)
                             unique_images.append((alt, url))
@@ -534,6 +601,9 @@ IMPORTANT:
                         images_section = "\n\n---\n\n## 📸 Captures d'écran de l'interface\n\n"
                         for idx, (alt, url) in enumerate(unique_images[:12], 1):  # Limit to 12 images
                             alt_text = alt if alt and alt.strip() else f"Capture d'écran {idx}"
+                            # Ensure URL is absolute
+                            if not url.startswith('http'):
+                                url = urljoin(base_url, url)
                             images_section += f"![{alt_text}]({url})\n\n"
                         final_response += images_section
                         # Clear extracted images for next query
