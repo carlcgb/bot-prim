@@ -329,38 +329,38 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         image_section += "---\n\n"
                     
                     response_text += image_section
+            
+            # FINAL FIX: Replace any remaining relative URLs in the ENTIRE response text with absolute URLs
+            # This must be done AFTER all text is assembled
+            import re
+            def replace_relative_url(match):
+                alt = match.group(1)
+                url = match.group(2).strip()
+                
+                if url and not url.startswith('http'):
+                    # Convert to absolute
+                    base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
                     
-                    # FINAL FIX: Replace any remaining relative URLs in the response text with absolute URLs
-                    import re
-                    def replace_relative_url(match):
-                        alt = match.group(1)
-                        url = match.group(2).strip()
-                        original_url = url
-                        
-                        if url and not url.startswith('http'):
-                            # Convert to absolute
-                            base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
-                            
-                            # Handle ./ prefix
-                            if url.startswith('./'):
-                                url = url[2:]  # Remove ./ prefix
-                            elif url.startswith('/'):
-                                # Absolute path from root
-                                base_url = 'https://aide.primlogix.com'
-                            
-                            # Use urljoin
-                            url = urljoin(base_url, url)
-                            
-                            # Final check
-                            if not url.startswith('http'):
-                                # Manual construction as last resort
-                                url = base_url.rstrip('/') + '/' + url.lstrip('/')
-                        
-                        return f"![{alt}]({url})"
+                    # Handle ./ prefix
+                    if url.startswith('./'):
+                        url = url[2:]  # Remove ./ prefix
+                    elif url.startswith('/'):
+                        # Absolute path from root
+                        base_url = 'https://aide.primlogix.com'
                     
-                    # Replace all relative image URLs in the response
-                    image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
-                    response_text = re.sub(image_pattern, replace_relative_url, response_text)
+                    # Use urljoin
+                    url = urljoin(base_url, url)
+                    
+                    # Final check
+                    if not url.startswith('http'):
+                        # Manual construction as last resort
+                        url = base_url.rstrip('/') + '/' + url.lstrip('/')
+                
+                return f"![{alt}]({url})"
+            
+            # Replace all relative image URLs in the ENTIRE response
+            image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+            response_text = re.sub(image_pattern, replace_relative_url, response_text)
             
             return response_text
         except ImportError as e:
