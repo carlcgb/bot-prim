@@ -70,16 +70,34 @@ python ingest.py
 
 ### Streamlit Cloud (Recommandé)
 
-1. Poussez votre code sur GitHub
-2. Connectez votre repo à [Streamlit Cloud](https://share.streamlit.io)
-3. **Pour l'URL GitHub**, utilisez l'une de ces options :
-   - **Option A (Recommandée)** : Cliquez sur "Switch to interactive picker" et sélectionnez votre repo et le fichier `app.py`
-   - **Option B** : Utilisez l'URL directe : `https://github.com/carlcgb/bot-prim/blob/main/app.py`
-4. Dans les paramètres de l'app, section "Secrets", ajoutez :
-   ```toml
-   GEMINI_API_KEY = "votre_cle_api_gemini"
-   ```
-5. Streamlit Cloud utilisera automatiquement les secrets lors du build
+**⚠️ IMPORTANT : Si vous voyez "This repository does not exist"**
+
+Votre repository est probablement **privé**. Streamlit Cloud doit être autorisé à y accéder :
+
+1. **Autoriser Streamlit Cloud** :
+   - Allez sur https://github.com/settings/applications
+   - Cliquez sur "Authorized GitHub Apps" (ou "Installed GitHub Apps")
+   - Trouvez "Streamlit" et cliquez sur "Configure"
+   - Assurez-vous que `carlcgb/bot-prim` est dans la liste des repositories autorisés
+   - Si Streamlit n'apparaît pas, vous serez invité à l'autoriser lors du premier déploiement
+
+2. **Déployer sur Streamlit Cloud** :
+   - Allez sur [Streamlit Cloud](https://share.streamlit.io)
+   - Cliquez sur "New app"
+   - **Repository** : `carlcgb/bot-prim` (sans https://github.com/)
+   - **Branch** : `main`
+   - **Main file path** : `app.py` (⚠️ pas `streamlit_app.py`)
+   - Cliquez sur "Deploy"
+
+3. **Configurer les secrets** :
+   - Dans les paramètres de l'app, section "Secrets", ajoutez :
+     ```toml
+     GEMINI_API_KEY = "votre_cle_api_gemini"
+     ```
+
+**Alternative : Rendre le repository public**
+- Si vous préférez, vous pouvez rendre le repository public dans les paramètres GitHub
+- ⚠️ Assurez-vous qu'aucune clé API n'est dans le code (déjà fait ✅)
 
 ### Cloudflare Pages
 
