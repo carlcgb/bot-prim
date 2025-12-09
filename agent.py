@@ -207,12 +207,13 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         unique_images.append(img)
                 
                 if unique_images:
-                    # Add images directly inline in the response text for better integration
-                    # Format: Simple markdown images that will be parsed and displayed inline
-                    image_section = "\n\n---\n\n## 📸 Captures d'écran de l'interface\n\n"
-                    image_section += f"*{len(unique_images)} capture(s) d'écran disponible(s) pour vous guider*\n\n"
+                    # Increase to 15 images for better coverage of interface elements
+                    # Add descriptive section header with instructions for the agent
+                    image_section = "\n\n---\n\n## 📸 Captures d'écran de l'interface PrimLogix\n\n"
+                    image_section += f"*{len(unique_images)} capture(s) d'écran de l'interface trouvée(s) dans la documentation*\n\n"
+                    image_section += "**IMPORTANT pour l'agent:** Utilise ces images pour guider l'utilisateur étape par étape. Référence-les dans ta réponse et explique ce qu'elles montrent.\n\n"
                     
-                    for idx, img in enumerate(unique_images[:12], 1):  # Up to 12 images for better performance
+                    for idx, img in enumerate(unique_images[:15], 1):  # Up to 15 images
                         # Build comprehensive description
                         description_parts = []
                         
@@ -224,20 +225,39 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         elif img.get('title'):
                             description_parts.append(img['title'])
                         
+                        # Add document context if available
+                        if img.get('document_title'):
+                            description_parts.append(f"(Source: {img['document_title']})")
+                        
+                        # Add caption if available
+                        if img.get('caption'):
+                            description_parts.append(f"Légende: {img['caption']}")
+                        
                         # Combine into final description
-                        alt_text = " | ".join(description_parts) if description_parts else f'Capture d\'écran {idx}'
+                        alt_text = " | ".join(description_parts) if description_parts else f'Capture d\'écran {idx} de l\'interface PrimLogix'
                         
                         # Clean alt text for better display
-                        alt_text = alt_text.replace('\n', ' ').strip()[:100]
+                        alt_text = alt_text.replace('\n', ' ').strip()[:150]  # Increased to 150 chars
                         if not alt_text:
-                            alt_text = f"Capture d'écran {idx}"
+                            alt_text = f"Capture d'écran {idx} de l'interface PrimLogix"
                         
-                        # Add image directly in markdown format (will be parsed by Streamlit)
-                        image_section += f"**Image {idx}:** {alt_text}\n\n"
+                        # Add image with enhanced description
+                        image_section += f"### Image {idx}\n\n"
                         image_section += f"![{alt_text}]({img['url']})\n\n"
+                        
+                        # Add detailed caption with all available information
+                        caption_parts = []
+                        if img.get('description') and img['description'] != alt_text:
+                            caption_parts.append(f"**Description:** {img['description']}")
+                        if img.get('context'):
+                            caption_parts.append(f"**Contexte:** {img['context'][:100]}...")
+                        if img.get('document_title'):
+                            caption_parts.append(f"**Source:** {img['document_title']}")
+                        
+                        if caption_parts:
+                            image_section += "*" + " | ".join(caption_parts) + "*\n\n"
+                        image_section += "---\n\n"
                     
-                    # Add images directly to response (not in separate section)
-                    # The agent will see these images and can reference them in its response
                     response_text += image_section
             
             return response_text
