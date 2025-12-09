@@ -191,8 +191,9 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                 response_text += f", {len(all_images)} image(s) associée(s)"
             
             # Add image URLs at the end in a special format that can be parsed
+            # Prioritize images from most relevant documents (earlier in results)
             if all_images:
-                # Remove duplicates while preserving order
+                # Remove duplicates while preserving order (most relevant first)
                 unique_images = []
                 seen_img_urls = set()
                 for img in all_images:
@@ -201,10 +202,24 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         unique_images.append(img)
                 
                 if unique_images:
-                    image_section = "\n\n[SCREENSHOTS]\n"
-                    for img in unique_images[:8]:  # Increased to 8 images for better coverage
-                        alt_text = img.get('alt', 'Screenshot') or img.get('title', 'Screenshot') or 'Screenshot'
-                        image_section += f"![{alt_text}]({img['url']})\n"
+                    # Increase to 12 images for better coverage
+                    # Add descriptive section header
+                    image_section = "\n\n---\n\n## 📸 Captures d'écran de la documentation\n\n"
+                    image_section += f"*{len(unique_images)} capture(s) d'écran trouvée(s) dans la documentation PrimLogix*\n\n"
+                    
+                    for idx, img in enumerate(unique_images[:12], 1):  # Up to 12 images
+                        alt_text = img.get('alt', '') or img.get('title', '') or f'Capture d\'écran {idx}'
+                        # Clean alt text for better display
+                        alt_text = alt_text.replace('\n', ' ').strip()[:100]  # Limit length
+                        if not alt_text:
+                            alt_text = f"Capture d'écran {idx}"
+                        
+                        # Add image with better formatting
+                        image_section += f"![{alt_text}]({img['url']})\n\n"
+                        # Add caption if available
+                        if img.get('title') and img['title'] != alt_text:
+                            image_section += f"*{img['title']}*\n\n"
+                    
                     response_text += image_section
             
             return response_text
@@ -312,7 +327,9 @@ IMPORTANT:
 - Réponds en français sauf si l'utilisateur demande explicitement en anglais
 - Sois précis et technique, mais reste accessible
 - Si tu n'es pas sûr, dis-le et propose des pistes de vérification
-- Pour les erreurs, fournis toujours le contexte et les causes possibles"""
+- Pour les erreurs, fournis toujours le contexte et les causes possibles
+- Utilise TOUJOURS l'outil search_knowledge_base avant de répondre pour avoir des informations à jour
+- Quand des captures d'écran sont disponibles, mentionne-les dans ta réponse et explique ce qu'elles montrent"""
             
             model_auto = genai.GenerativeModel(
                 model_name=params_model_name,
