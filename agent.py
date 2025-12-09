@@ -329,6 +329,25 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         image_section += "---\n\n"
                     
                     response_text += image_section
+                    
+                    # FINAL FIX: Replace any remaining relative URLs in the response text with absolute URLs
+                    import re
+                    def replace_relative_url(match):
+                        alt = match.group(1)
+                        url = match.group(2)
+                        if url and not url.startswith('http'):
+                            # Convert to absolute
+                            if url.startswith('./'):
+                                url = url[2:]
+                            base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
+                            url = urljoin(base_url, url)
+                            if not url.startswith('http'):
+                                url = base_url + url.lstrip('/')
+                        return f"![{alt}]({url})"
+                    
+                    # Replace all relative image URLs in the response
+                    image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+                    response_text = re.sub(image_pattern, replace_relative_url, response_text)
             
             return response_text
         except ImportError as e:
