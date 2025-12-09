@@ -11,17 +11,38 @@ Un agent d'assistance intelligent pour la documentation PrimLogix utilisant Gemi
 
 ## Configuration
 
-### Variables d'environnement
+### Variables d'environnement / Secrets
 
-Créez un fichier `.env` ou configurez les variables d'environnement suivantes:
+Le bot utilise les secrets/variables d'environnement suivants :
 
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
+- `GEMINI_API_KEY` - Clé API Google Gemini (requis pour le provider Gemini)
+
+#### Pour le développement local
+
+Créez un fichier `.streamlit/secrets.toml` (utilisez `.streamlit/secrets.toml.example` comme modèle) :
+
+```toml
+GEMINI_API_KEY = "votre_cle_api_gemini"
 ```
 
-Pour GitHub Actions / Cloudflare Pages, configurez les secrets dans:
-- GitHub: Settings > Secrets and variables > Actions
-- Cloudflare Pages: Settings > Environment variables
+#### Pour Streamlit Cloud
+
+1. Allez dans les paramètres de votre app Streamlit Cloud
+2. Section "Secrets"
+3. Ajoutez :
+   ```toml
+   GEMINI_API_KEY = "votre_cle_api_gemini"
+   ```
+
+#### Pour GitHub Actions / Cloudflare Pages
+
+Configurez les secrets dans :
+- **GitHub**: Settings > Secrets and variables > Actions > New repository secret
+  - Nom: `GEMINI_API_KEY`
+  - Valeur: votre clé API Gemini
+- **Cloudflare Pages**: Settings > Environment variables
+  - Nom: `GEMINI_API_KEY`
+  - Valeur: votre clé API Gemini
 
 ## Installation
 
@@ -39,7 +60,7 @@ streamlit run app.py
 
 ### Ingestion de la documentation
 
-Pour mettre à jour la base de connaissances:
+Pour mettre à jour la base de connaissances :
 
 ```bash
 python ingest.py
@@ -47,19 +68,25 @@ python ingest.py
 
 ## Déploiement
 
-### Streamlit Cloud
+### Streamlit Cloud (Recommandé)
 
 1. Poussez votre code sur GitHub
 2. Connectez votre repo à [Streamlit Cloud](https://streamlit.io/cloud)
-3. Configurez la variable d'environnement `GEMINI_API_KEY` dans les paramètres
+3. Dans les paramètres de l'app, section "Secrets", ajoutez :
+   ```toml
+   GEMINI_API_KEY = "votre_cle_api_gemini"
+   ```
+4. Streamlit Cloud utilisera automatiquement les secrets lors du build
 
-### Cloudflare Pages / Workers
+### Cloudflare Pages
 
-1. Ajoutez la variable d’environnement `GEMINI_API_KEY` dans **Cloudflare Pages > Settings > Environment variables** (ou dans votre Worker si vous déployez un backend Python).
-2. Définissez-la pour les environnements **Preview** et **Production**.
-3. Déployez après avoir poussé le code sur GitHub.
+Note: Cloudflare Pages est principalement pour les sites statiques. Pour une app Streamlit, considérez:
+- Streamlit Cloud (recommandé)
+- Heroku
+- Railway
+- Render
 
-> Remarque: Cloudflare Pages est pensé pour les sites statiques. Pour une app Streamlit, vous pouvez aussi considérer Streamlit Cloud (recommandé), Heroku, Railway ou Render.
+Si vous utilisez Cloudflare Workers/Pages avec une API backend, configurez la variable d'environnement `GEMINI_API_KEY` dans les paramètres.
 
 ## Structure du projet
 
@@ -68,8 +95,18 @@ python ingest.py
 - `knowledge_base.py` - Gestion de la base de données vectorielle
 - `scraper.py` - Scraping de la documentation PrimLogix
 - `ingest.py` - Script d'ingestion des données
+- `.streamlit/config.toml` - Configuration Streamlit
+- `.streamlit/secrets.toml.example` - Exemple de fichier secrets (local)
+
+## Sécurité
+
+⚠️ **Important**: Ne commitez JAMAIS de clés API dans le code. Utilisez toujours :
+- Streamlit secrets pour Streamlit Cloud
+- Variables d'environnement pour les autres plateformes
+- GitHub Secrets pour GitHub Actions
+
+Le fichier `.gitignore` est configuré pour exclure les fichiers contenant des secrets.
 
 ## Licence
 
 Propriétaire - Dev-NTIC
-

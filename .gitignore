@@ -39,7 +39,12 @@ ENV/
 .env.*.local
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
+.streamlit/credentials.json
+# But keep config.toml and secrets.toml.example
+!.streamlit/
+!.streamlit/config.toml
+!.streamlit/secrets.toml.example
 
 # ChromaDB
 chroma_db/

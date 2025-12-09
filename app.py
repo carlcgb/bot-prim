@@ -19,9 +19,22 @@ if provider_type == "OpenAI":
     api_key = st.sidebar.text_input("OpenAI API Key", type="password")
     model_name = st.sidebar.text_input("Model Name", value="gpt-3.5-turbo")
 elif provider_type == "Google Gemini":
-    # Get Gemini API key from environment variable (GitHub secrets) or user input
-    default_gemini_key = os.getenv("GEMINI_API_KEY", "")
-    api_key = st.sidebar.text_input("Gemini API Key", value=default_gemini_key, type="password", help="Get it from https://aistudio.google.com/ or set GEMINI_API_KEY environment variable")
+    # Get Gemini API key from Streamlit secrets (for Streamlit Cloud) or environment variable (for other deployments)
+    # Priority: Streamlit secrets > Environment variable > User input
+    default_gemini_key = ""
+    if hasattr(st.secrets, "GEMINI_API_KEY"):
+        # Streamlit Cloud secrets
+        default_gemini_key = st.secrets.GEMINI_API_KEY
+    elif "GEMINI_API_KEY" in os.environ:
+        # Environment variable (GitHub Actions, Cloudflare, etc.)
+        default_gemini_key = os.getenv("GEMINI_API_KEY", "")
+    
+    api_key = st.sidebar.text_input(
+        "Gemini API Key", 
+        value=default_gemini_key, 
+        type="password", 
+        help="Get it from https://aistudio.google.com/. For Streamlit Cloud, set it in app settings. For other deployments, use GEMINI_API_KEY environment variable."
+    )
     base_url = None  # Gemini uses google-generativeai library directly, not OpenAI-compatible endpoint
     model_name = st.sidebar.text_input("Model Name", value="gemini-2.5-flash", help="Available: gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash")
 else:
