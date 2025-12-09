@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="primbot",
-    version="1.0.0",
+    version="1.0.1",
     author="Dev-NTIC",
     description="PRIMBOT CLI - PrimLogix Debug Agent with Gemini AI",
     long_description=long_description,

@@ -8,6 +8,7 @@ import argparse
 import sys
 import os
 from agent import PrimAgent
+from knowledge_base import collection
 
 def main():
     parser = argparse.ArgumentParser(
@@ -79,9 +80,27 @@ Examples:
         else:
             api_key = 'ollama'  # Dummy for local
     
+    # Prompt for API key if not provided and required
     if not api_key and args.provider != 'local':
-        print(f"Error: API key required for {args.provider}. Set --key or {args.provider.upper()}_API_KEY environment variable.", file=sys.stderr)
-        sys.exit(1)
+        print(f"\n🔑 Clé API requise pour {args.provider}", file=sys.stderr)
+        print(f"Vous pouvez la définir via:", file=sys.stderr)
+        print(f"  - Variable d'environnement: {args.provider.upper()}_API_KEY", file=sys.stderr)
+        print(f"  - Option --key lors de l'appel", file=sys.stderr)
+        print(f"  - Ou la saisir maintenant (recommandé pour la première utilisation)\n", file=sys.stderr)
+        
+        api_key = input(f"Entrez votre clé API {args.provider.upper()}: ").strip()
+        
+        if not api_key:
+            print(f"❌ Erreur: Clé API requise pour {args.provider}.", file=sys.stderr)
+            sys.exit(1)
+        
+        # Optionally save to environment for this session
+        if args.provider == 'gemini':
+            os.environ['GEMINI_API_KEY'] = api_key
+        elif args.provider == 'openai':
+            os.environ['OPENAI_API_KEY'] = api_key
+        
+        print("✅ Clé API configurée\n", file=sys.stderr)
     
     # Determine model
     if not args.model:
@@ -100,6 +119,29 @@ Examples:
     }
     provider = provider_map[args.provider]
     
+    # Check knowledge base and initialize if empty
+    kb_count = collection.count()
+    if kb_count == 0:
+        print("⚠️  Base de connaissances vide détectée.", file=sys.stderr)
+        response = input("Voulez-vous initialiser la base de connaissances maintenant? (o/n): ").strip().lower()
+        if response in ['o', 'oui', 'y', 'yes']:
+            print("\n📥 Scraping de la documentation PrimLogix...")
+            try:
+                from scraper import run_scraper
+                from knowledge_base import add_documents
+                
+                data = run_scraper()
+                print(f"💾 Ajout de {len(data)} pages à la base de connaissances...")
+                add_documents(data)
+                print(f"✅ Base de connaissances initialisée avec {collection.count()} documents!\n")
+            except Exception as e:
+                print(f"❌ Erreur lors de l'ingestion: {e}", file=sys.stderr)
+                print("Vous pouvez continuer, mais la recherche dans la base de connaissances ne fonctionnera pas.", file=sys.stderr)
+        else:
+            print("⚠️  La base de connaissances est vide. La recherche ne fonctionnera pas.\n", file=sys.stderr)
+    else:
+        print(f"📚 Base de connaissances: {kb_count} documents chargés\n", file=sys.stderr)
+    
     # Initialize agent
     try:
         agent = PrimAgent(
@@ -115,6 +157,8 @@ Examples:
     # Interactive mode
     if args.interactive or not args.query:
         print("🤖 PRIMBOT CLI - PrimLogix Debug Agent")
+        if kb_count > 0:
+            print(f"📚 Base de connaissances: {kb_count} documents")
         print("Type 'exit' or 'quit' to end the session\n")
         
         messages = []
