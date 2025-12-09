@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "primbot"
-version = "1.0.2"
+version = "1.0.3"
 description = "PRIMBOT CLI - PrimLogix Debug Agent with Gemini AI and Ollama"
 readme = "README.md"
 requires-python = ">=3.8"

@@ -1,4 +1,4 @@
-# 📦 PRIMBOT v1.0.2 - Guide d'Installation et Utilisation
+# 📦 PRIMBOT v1.0.3 - Guide d'Installation et Utilisation
 
 ## 🚀 Installation Rapide
 

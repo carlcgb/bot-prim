@@ -17,7 +17,7 @@ if os.path.exists(requirements_path):
 
 setup(
     name="primbot",
-    version="1.0.2",
+    version="1.0.3",
     author="Dev-NTIC",
     description="PRIMBOT CLI - PrimLogix Debug Agent with Gemini AI and Ollama",
     long_description=long_description,
