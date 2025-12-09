@@ -26,7 +26,9 @@ Assistant AI pour PrimLogix. 100% gratuit, CLI et Web, Gemini/Ollama.
 
 ### 3. Ajouter des Topics (Recommandé)
 
-Ajoutez ces topics pour améliorer la découvrabilité :
+**IMPORTANT :** Ajoutez les topics **un par un** en appuyant sur Entrée après chaque topic, OU séparez-les par des virgules.
+
+Topics recommandés (tous commencent par une minuscule, max 50 caractères) :
 
 ```
 primlogix
@@ -41,6 +43,13 @@ chatbot
 vector-search
 chromadb
 ```
+
+**Règles GitHub :**
+- ✅ Commencer par une lettre minuscule ou un chiffre
+- ✅ Maximum 50 caractères
+- ✅ Peuvent contenir des tirets (-)
+- ❌ Pas de majuscules au début
+- ❌ Pas d'espaces (utilisez des tirets)
 
 ### 4. Site Web (Optionnel)
 

@@ -10,10 +10,25 @@
 Assistant intelligent pour la documentation PrimLogix avec Gemini AI. 100% gratuit, interface CLI et Web, captures d'écran pertinentes.
 ```
 
-4. **Ajoutez ces Topics** (séparez par des virgules) :
+4. **Ajoutez ces Topics** (séparez par des virgules, un par un ou tous ensemble) :
 ```
-primlogix, ai-assistant, gemini, ollama, streamlit, cli, documentation, python, chatbot, vector-search, chromadb
+primlogix
+ai-assistant
+gemini
+ollama
+streamlit
+cli
+documentation
+python
+chatbot
+vector-search
+chromadb
 ```
+
+**Important :** 
+- Chaque topic doit commencer par une lettre minuscule ou un chiffre
+- Maximum 50 caractères par topic
+- Séparez-les par des virgules OU ajoutez-les un par un en appuyant sur Entrée après chaque topic
 
 5. **Cliquez sur "Save"**
 
@@ -25,19 +40,30 @@ Si vous préférez une description plus longue, utilisez :
 Assistant intelligent pour la documentation PrimLogix. Recherche sémantique, captures d'écran pertinentes, support Gemini AI et Ollama. 100% gratuit, interface CLI et Web.
 ```
 
-## 🎯 Topics Recommandés
+## 🎯 Topics Recommandés (Format Correct)
 
-- `primlogix` - Le logiciel cible
-- `ai-assistant` - Type de projet
-- `gemini` - Modèle AI utilisé
-- `ollama` - Alternative locale
-- `streamlit` - Framework web
-- `cli` - Interface ligne de commande
-- `documentation` - But du projet
-- `python` - Langage principal
-- `chatbot` - Type d'application
-- `vector-search` - Technologie utilisée
-- `chromadb` - Base de données
+Ajoutez ces topics **un par un** en appuyant sur Entrée après chaque topic, OU séparez-les par des virgules :
+
+```
+primlogix
+ai-assistant
+gemini
+ollama
+streamlit
+cli
+documentation
+python
+chatbot
+vector-search
+chromadb
+```
+
+**Règles GitHub pour les topics :**
+- ✅ Doivent commencer par une lettre minuscule ou un chiffre
+- ✅ Maximum 50 caractères
+- ✅ Peuvent contenir des tirets (-)
+- ❌ Ne peuvent pas commencer par une majuscule
+- ❌ Ne peuvent pas contenir d'espaces (utilisez des tirets)
 
 ## ✅ Vérification
 
