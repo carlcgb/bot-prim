@@ -470,6 +470,18 @@ IMPORTANT:
                                 # Handle query parameter
                                 query = function_args.get('query', '')
                                 function_result = self.tool_map[function_name](query)
+                                
+                                # Store images from search_kb for later inclusion
+                                if function_name == "search_knowledge_base":
+                                    # Extract images from the function result
+                                    import re
+                                    image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+                                    extracted_images = re.findall(image_pattern, str(function_result))
+                                    if extracted_images:
+                                        # Store images to add to final response
+                                        if not hasattr(self, '_extracted_images'):
+                                            self._extracted_images = []
+                                        self._extracted_images.extend(extracted_images)
                             else:
                                 function_result = f"Unknown function: {function_name}"
                             
@@ -484,8 +496,9 @@ IMPORTANT:
                             continue
                 
                 # No function call, return text response
+                final_response = ""
                 if hasattr(response, 'text'):
-                    return response.text
+                    final_response = response.text
                 elif hasattr(response, 'candidates') and len(response.candidates) > 0:
                     candidate = response.candidates[0]
                     if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
@@ -494,7 +507,30 @@ IMPORTANT:
                             if hasattr(part, 'text') and part.text:
                                 text_parts.append(part.text)
                         if text_parts:
-                            return ''.join(text_parts)
+                            final_response = ''.join(text_parts)
+                
+                # Add extracted images to the response if they exist
+                if final_response and hasattr(self, '_extracted_images') and self._extracted_images:
+                    # Remove duplicates while preserving order
+                    seen_images = set()
+                    unique_images = []
+                    for alt, url in self._extracted_images:
+                        if url not in seen_images:
+                            seen_images.add(url)
+                            unique_images.append((alt, url))
+                    
+                    if unique_images:
+                        # Add images section to response
+                        images_section = "\n\n---\n\n## 📸 Captures d'écran de l'interface\n\n"
+                        for idx, (alt, url) in enumerate(unique_images[:12], 1):  # Limit to 12 images
+                            alt_text = alt if alt and alt.strip() else f"Capture d'écran {idx}"
+                            images_section += f"![{alt_text}]({url})\n\n"
+                        final_response += images_section
+                        # Clear extracted images for next query
+                        self._extracted_images = []
+                
+                if final_response:
+                    return final_response
                 
                 # If we get here, something unexpected happened
                 break
