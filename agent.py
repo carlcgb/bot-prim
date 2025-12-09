@@ -359,7 +359,21 @@ QUAND TU UTILISES LA BASE DE CONNAISSANCES:
 - Analyse TOUS les résultats de recherche fournis
 - Combine les informations de plusieurs sources si nécessaire
 - Mentionne les scores de pertinence si disponibles
-- Utilise les captures d'écran fournies pour illustrer tes explications
+- **UTILISE LES CAPTURES D'ÉCRAN POUR GUIDER L'UTILISATEUR** :
+  * Référence explicitement les images dans ta réponse (ex: "Comme on peut le voir dans l'image 1...")
+  * Décris ce que montre chaque image en détail
+  * Utilise les images pour donner des instructions étape par étape
+  * Indique où cliquer, quels champs remplir, quels menus ouvrir
+  * Guide visuellement l'utilisateur en pointant vers les éléments de l'interface visibles dans les images
+  * Si plusieurs images sont disponibles, utilise-les pour montrer un processus complet
+  * Mentionne les numéros d'images pour que l'utilisateur puisse les suivre
+
+UTILISATION DES IMAGES POUR GUIDER:
+1. **Orientation visuelle** : "Dans l'image 1, vous pouvez voir..."
+2. **Instructions précises** : "Cliquez sur le bouton visible dans l'image 2 (en haut à droite)"
+3. **Processus étape par étape** : "Suivez les images dans l'ordre : Image 1 → Image 2 → Image 3"
+4. **Détection d'éléments** : "Dans l'image, repérez le champ 'Nom' (visible au centre)"
+5. **Navigation** : "Utilisez le menu visible dans l'image pour accéder à..."
 
 IMPORTANT:
 - Réponds en français sauf si l'utilisateur demande explicitement en anglais
@@ -367,7 +381,8 @@ IMPORTANT:
 - Si tu n'es pas sûr, dis-le et propose des pistes de vérification
 - Pour les erreurs, fournis toujours le contexte et les causes possibles
 - Utilise TOUJOURS l'outil search_knowledge_base avant de répondre pour avoir des informations à jour
-- Quand des captures d'écran sont disponibles, mentionne-les dans ta réponse et explique ce qu'elles montrent"""
+- **TOUJOURS référencer les images par leur numéro** (Image 1, Image 2, etc.) quand tu guides l'utilisateur
+- **Décris visuellement** ce que l'utilisateur doit voir et faire en utilisant les images comme référence"""
             
             model_auto = genai.GenerativeModel(
                 model_name=params_model_name,
