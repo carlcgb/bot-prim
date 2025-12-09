@@ -84,11 +84,75 @@ def scrape_page(url):
                         if figcaption:
                             figure_caption = figcaption.get_text(strip=True)
                     
-                    # Build enhanced description
+                    # FILTER OUT ICONS AND SMALL LOGOS - Only keep real screenshots
+                    # Check image dimensions from HTML attributes
+                    img_width = img.get('width', '')
+                    img_height = img.get('height', '')
+                    
+                    # Convert to integers if they're numeric strings
+                    width_val = None
+                    height_val = None
+                    try:
+                        if img_width and str(img_width).isdigit():
+                            width_val = int(img_width)
+                        if img_height and str(img_height).isdigit():
+                            height_val = int(img_height)
+                    except (ValueError, AttributeError):
+                        pass
+                    
+                    # Filter criteria: exclude small icons/logos
+                    # Icons are typically < 100px in either dimension
+                    is_small_icon = False
+                    if width_val and width_val < 100:
+                        is_small_icon = True
+                    if height_val and height_val < 100:
+                        is_small_icon = True
+                    
+                    # Filter by filename - exclude common icon/logo patterns
+                    img_filename = img_url.lower()
+                    icon_patterns = [
+                        'icon', 'logo', 'button', 'arrow', 'chevron', 
+                        'nav', 'menu', 'bullet', 'dot', 'star', 'check',
+                        'close', 'delete', 'edit', 'add', 'remove',
+                        '40x40', '32x32', '24x24', '16x16', '20x20',
+                        'favicon', 'sprite', 'glyph'
+                    ]
+                    
+                    # Check if filename suggests it's an icon/logo
+                    is_icon_filename = any(pattern in img_filename for pattern in icon_patterns)
+                    
+                    # Filter by alt/title text - exclude generic icon descriptions
                     alt_text = img.get('alt', '') or img.get('title', '') or ''
                     title_text = img.get('title', '')
+                    combined_text = (alt_text + ' ' + title_text).lower()
+                    icon_text_patterns = ['icon', 'logo', 'button', 'arrow', 'chevron', 'nav']
+                    is_icon_text = any(pattern in combined_text for pattern in icon_text_patterns)
                     
-                    # Combine all available text for better description
+                    # Skip if it's clearly an icon/logo
+                    if is_small_icon or (is_icon_filename and not any(x in img_filename for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran'])):
+                        continue
+                    if is_icon_text and not any(x in combined_text for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage']):
+                        continue
+                    
+                    # Only include images that look like screenshots:
+                    # - Have reasonable size (or no size specified, which usually means full-size)
+                    # - Are in /images/ directory (where screenshots are typically stored)
+                    # - Have screenshot-related keywords in filename or context
+                    is_likely_screenshot = False
+                    if '/images/' in img_url.lower():
+                        is_likely_screenshot = True
+                    if any(keyword in img_filename for keyword in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog']):
+                        is_likely_screenshot = True
+                    if any(keyword in context_text.lower() for keyword in ['capture', 'screenshot', 'interface', 'fenetre', 'ecran', 'affichage']):
+                        is_likely_screenshot = True
+                    if figure_caption and any(keyword in figure_caption.lower() for keyword in ['capture', 'screenshot', 'interface', 'fenetre', 'ecran']):
+                        is_likely_screenshot = True
+                    
+                    # Skip if it doesn't look like a screenshot
+                    if not is_likely_screenshot:
+                        continue
+                    
+                    # Build enhanced description
                     description_parts = []
                     if alt_text:
                         description_parts.append(alt_text)
@@ -102,25 +166,17 @@ def scrape_page(url):
                     
                     enhanced_description = " | ".join(description_parts) if description_parts else 'Capture d\'écran de l\'interface PrimLogix'
                     
-                    # Validate it's a real image URL
-                    if any(img_url.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']):
+                    # Only include real image files (exclude SVG which are often icons)
+                    if any(img_url.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']):
                         images.append({
                             "url": img_url,
                             "alt": alt_text or 'Screenshot',
                             "title": title_text or '',
                             "description": enhanced_description,  # Enhanced description with context
                             "context": context_text,  # Context around the image
-                            "caption": figure_caption  # Figure caption if available
-                        })
-                    # Also include images that might be served dynamically but have image-like paths
-                    elif '/images/' in img_url.lower() or '/img/' in img_url.lower() or '/screenshots/' in img_url.lower() or 'screenshot' in img_url.lower():
-                        images.append({
-                            "url": img_url,
-                            "alt": alt_text or 'Screenshot',
-                            "title": title_text or '',
-                            "description": enhanced_description,
-                            "context": context_text,
-                            "caption": figure_caption
+                            "caption": figure_caption,  # Figure caption if available
+                            "width": width_val,  # Store dimensions for later filtering
+                            "height": height_val
                         })
             
             title = soup.title.string if soup.title else url

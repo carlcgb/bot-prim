@@ -239,16 +239,44 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         seen_img_urls.add(img['url'])
                         unique_images.append(img)
                 
-                # Filter images by relevance score - only keep relevant images
+                # Filter images by relevance score AND ensure they're real screenshots (not icons/logos)
                 # Images from documents with relevance_score >= 40% are considered relevant
                 relevant_images = []
                 for img in unique_images:
                     relevance_score = img.get('relevance_score')
-                    # Include images if:
-                    # 1. They come from highly relevant documents (score >= 40%)
-                    # 2. Or they have no score (include them to be safe)
-                    if relevance_score is None or relevance_score >= 40:
-                        relevant_images.append(img)
+                    
+                    # Skip if relevance is too low
+                    if relevance_score is not None and relevance_score < 40:
+                        continue
+                    
+                    # Additional filtering: ensure it's a real screenshot, not an icon/logo
+                    img_url = img.get('url', '').lower()
+                    img_description = (img.get('description', '') + ' ' + img.get('alt', '') + ' ' + img.get('title', '')).lower()
+                    
+                    # Check dimensions if available
+                    img_width = img.get('width')
+                    img_height = img.get('height')
+                    if img_width and img_width < 100:
+                        continue  # Too small, likely an icon
+                    if img_height and img_height < 100:
+                        continue  # Too small, likely an icon
+                    
+                    # Exclude common icon/logo patterns in filename
+                    icon_patterns = ['icon', 'logo', 'button', 'arrow', 'chevron', 'nav', 'menu', 
+                                    '40x40', '32x32', '24x24', '16x16', '20x20', 'favicon', 'sprite']
+                    if any(pattern in img_url for pattern in icon_patterns):
+                        # But allow if it's clearly a screenshot
+                        if not any(x in img_url for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran']):
+                            continue
+                    
+                    # Must have screenshot-related keywords in URL or description
+                    screenshot_keywords = ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 
+                                         'affichage', 'window', 'dialog', 'images/']
+                    if not any(keyword in img_url or keyword in img_description for keyword in screenshot_keywords):
+                        continue
+                    
+                    # Include this image - it's relevant and looks like a real screenshot
+                    relevant_images.append(img)
                 
                 # Sort by relevance score (highest first), then by document order
                 relevant_images.sort(key=lambda x: (
