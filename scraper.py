@@ -39,7 +39,7 @@ def scrape_page(url):
             h.ignore_links = False
             text_content = h.handle(str(content_div))
             
-            # Extract image URLs from the page
+            # Extract image URLs from the page with enhanced context
             images = []
             for img in soup.find_all('img', src=True):
                 img_src = img.get('src', '')
@@ -58,19 +58,61 @@ def scrape_page(url):
                     if not img_url.startswith('http'):
                         img_url = urljoin(BASE_URL, img_url)
                     
+                    # Extract context around the image for better understanding
+                    # Get parent element and nearby text
+                    parent = img.find_parent(['div', 'section', 'article', 'figure', 'p'])
+                    context_text = ""
+                    if parent:
+                        # Get text before and after the image
+                        parent_text = parent.get_text(separator=' ', strip=True)
+                        # Limit context to 200 chars
+                        context_text = parent_text[:200] if parent_text else ""
+                    
+                    # Get figure caption if exists
+                    figure_caption = ""
+                    figure = img.find_parent('figure')
+                    if figure:
+                        figcaption = figure.find('figcaption')
+                        if figcaption:
+                            figure_caption = figcaption.get_text(strip=True)
+                    
+                    # Build enhanced description
+                    alt_text = img.get('alt', '') or img.get('title', '') or ''
+                    title_text = img.get('title', '')
+                    
+                    # Combine all available text for better description
+                    description_parts = []
+                    if alt_text:
+                        description_parts.append(alt_text)
+                    if title_text and title_text != alt_text:
+                        description_parts.append(title_text)
+                    if figure_caption:
+                        description_parts.append(f"Légende: {figure_caption}")
+                    if context_text:
+                        # Add context as description
+                        description_parts.append(f"Contexte: {context_text}")
+                    
+                    enhanced_description = " | ".join(description_parts) if description_parts else 'Capture d\'écran de l\'interface PrimLogix'
+                    
                     # Validate it's a real image URL
                     if any(img_url.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']):
                         images.append({
                             "url": img_url,
-                            "alt": img.get('alt', '') or img.get('title', '') or 'Screenshot',
-                            "title": img.get('title', '')
+                            "alt": alt_text or 'Screenshot',
+                            "title": title_text or '',
+                            "description": enhanced_description,  # Enhanced description with context
+                            "context": context_text,  # Context around the image
+                            "caption": figure_caption  # Figure caption if available
                         })
                     # Also include images that might be served dynamically but have image-like paths
-                    elif '/images/' in img_url.lower() or '/img/' in img_url.lower() or '/screenshots/' in img_url.lower():
+                    elif '/images/' in img_url.lower() or '/img/' in img_url.lower() or '/screenshots/' in img_url.lower() or 'screenshot' in img_url.lower():
                         images.append({
                             "url": img_url,
-                            "alt": img.get('alt', '') or img.get('title', '') or 'Screenshot',
-                            "title": img.get('title', '')
+                            "alt": alt_text or 'Screenshot',
+                            "title": title_text or '',
+                            "description": enhanced_description,
+                            "context": context_text,
+                            "caption": figure_caption
                         })
             
             title = soup.title.string if soup.title else url

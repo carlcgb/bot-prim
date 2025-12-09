@@ -156,7 +156,7 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         relevance_badge = "⚪ [Peu pertinent]"
                     relevance_badge += f" (Score: {relevance_score}%)"
                 
-                # Extract images from metadata
+                # Extract images from metadata with enhanced context
                 images_json = metadatas[i].get('images', '') if i < len(metadatas) else ''
                 if images_json:
                     try:
@@ -164,7 +164,12 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         for img in images:
                             if img['url'] not in seen_urls:
                                 seen_urls.add(img['url'])
-                                all_images.append(img)
+                                # Add document context to image for better understanding
+                                img_with_context = img.copy()
+                                img_with_context['document_title'] = title
+                                img_with_context['document_url'] = source
+                                img_with_context['relevance_score'] = relevance_score
+                                all_images.append(img_with_context)
                     except:
                         pass
                 
@@ -202,23 +207,56 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         unique_images.append(img)
                 
                 if unique_images:
-                    # Increase to 12 images for better coverage
-                    # Add descriptive section header
-                    image_section = "\n\n---\n\n## 📸 Captures d'écran de la documentation\n\n"
-                    image_section += f"*{len(unique_images)} capture(s) d'écran trouvée(s) dans la documentation PrimLogix*\n\n"
+                    # Increase to 15 images for better coverage of interface elements
+                    # Add descriptive section header with instructions for the agent
+                    image_section = "\n\n---\n\n## 📸 Captures d'écran de l'interface PrimLogix\n\n"
+                    image_section += f"*{len(unique_images)} capture(s) d'écran de l'interface trouvée(s) dans la documentation*\n\n"
+                    image_section += "**IMPORTANT pour l'agent:** Utilise ces images pour guider l'utilisateur étape par étape. Référence-les dans ta réponse et explique ce qu'elles montrent.\n\n"
                     
-                    for idx, img in enumerate(unique_images[:12], 1):  # Up to 12 images
-                        alt_text = img.get('alt', '') or img.get('title', '') or f'Capture d\'écran {idx}'
-                        # Clean alt text for better display
-                        alt_text = alt_text.replace('\n', ' ').strip()[:100]  # Limit length
-                        if not alt_text:
-                            alt_text = f"Capture d'écran {idx}"
+                    for idx, img in enumerate(unique_images[:15], 1):  # Up to 15 images
+                        # Build comprehensive description
+                        description_parts = []
                         
-                        # Add image with better formatting
-                        image_section += f"![{alt_text}]({img['url']})\n\n"
+                        # Priority: description > alt > title > default
+                        if img.get('description'):
+                            description_parts.append(img['description'])
+                        elif img.get('alt'):
+                            description_parts.append(img['alt'])
+                        elif img.get('title'):
+                            description_parts.append(img['title'])
+                        
+                        # Add document context if available
+                        if img.get('document_title'):
+                            description_parts.append(f"(Source: {img['document_title']})")
+                        
                         # Add caption if available
-                        if img.get('title') and img['title'] != alt_text:
-                            image_section += f"*{img['title']}*\n\n"
+                        if img.get('caption'):
+                            description_parts.append(f"Légende: {img['caption']}")
+                        
+                        # Combine into final description
+                        alt_text = " | ".join(description_parts) if description_parts else f'Capture d\'écran {idx} de l\'interface PrimLogix'
+                        
+                        # Clean alt text for better display
+                        alt_text = alt_text.replace('\n', ' ').strip()[:150]  # Increased to 150 chars
+                        if not alt_text:
+                            alt_text = f"Capture d'écran {idx} de l'interface PrimLogix"
+                        
+                        # Add image with enhanced description
+                        image_section += f"### Image {idx}\n\n"
+                        image_section += f"![{alt_text}]({img['url']})\n\n"
+                        
+                        # Add detailed caption with all available information
+                        caption_parts = []
+                        if img.get('description') and img['description'] != alt_text:
+                            caption_parts.append(f"**Description:** {img['description']}")
+                        if img.get('context'):
+                            caption_parts.append(f"**Contexte:** {img['context'][:100]}...")
+                        if img.get('document_title'):
+                            caption_parts.append(f"**Source:** {img['document_title']}")
+                        
+                        if caption_parts:
+                            image_section += "*" + " | ".join(caption_parts) + "*\n\n"
+                        image_section += "---\n\n"
                     
                     response_text += image_section
             
