@@ -71,12 +71,15 @@ python ingest.py
 ### Streamlit Cloud (Recommandé)
 
 1. Poussez votre code sur GitHub
-2. Connectez votre repo à [Streamlit Cloud](https://streamlit.io/cloud)
-3. Dans les paramètres de l'app, section "Secrets", ajoutez :
+2. Connectez votre repo à [Streamlit Cloud](https://share.streamlit.io)
+3. **Pour l'URL GitHub**, utilisez l'une de ces options :
+   - **Option A (Recommandée)** : Cliquez sur "Switch to interactive picker" et sélectionnez votre repo et le fichier `app.py`
+   - **Option B** : Utilisez l'URL directe : `https://github.com/carlcgb/bot-prim/blob/main/app.py`
+4. Dans les paramètres de l'app, section "Secrets", ajoutez :
    ```toml
    GEMINI_API_KEY = "votre_cle_api_gemini"
    ```
-4. Streamlit Cloud utilisera automatiquement les secrets lors du build
+5. Streamlit Cloud utilisera automatiquement les secrets lors du build
 
 ### Cloudflare Pages
 
