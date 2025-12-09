@@ -180,7 +180,34 @@ Pour toute question ou problème :
 
 ---
 
-**Version:** 1.0.2  
-**Date:** 2024  
+## 🆕 Nouveautés v1.0.3
+
+### ✨ Améliorations Majeures
+
+- 📸 **Filtrage intelligent des images** - Exclusion automatique des icônes et logos, seules les vraies captures d'écran pertinentes sont incluses
+- 🖼️ **Affichage d'images optimisé** - Préservation du ratio d'aspect, pas de déformation ou d'étirement
+- 📖 **Documentation complète** - Nouveau guide étape par étape (`docs/CLI_USAGE.md`) avec exemples pratiques
+- 📋 **Section ABOUT** - Présentation complète du projet dans le README
+- 🧹 **Nettoyage du code** - Suppression des fichiers inutilisés, code optimisé
+- 🗄️ **Gestion de la base de données** - Exclusion de la base de données du repository Git pour éviter de remplir GitHub
+
+### 🔧 Corrections
+
+- ✅ Correction de l'affichage des images (stretching résolu)
+- ✅ Amélioration de la pertinence des images retournées
+- ✅ Conversion automatique des URLs d'images relatives en absolues
+- ✅ Meilleure gestion des erreurs et messages d'aide
+
+### 📚 Documentation
+
+- ✅ Guide complet d'utilisation CLI (`docs/CLI_USAGE.md`)
+- ✅ Instructions étape par étape dans RELEASE_NOTES.md
+- ✅ Section ABOUT dans le README
+- ✅ Exemples pratiques et cas d'usage
+
+---
+
+**Version:** 1.0.3  
+**Date:** Décembre 2024  
 **Licence:** MIT
 
