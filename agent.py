@@ -91,10 +91,34 @@ IMPORTANT:
     def _search_kb(self, query):
         logger.debug(f"Searching KB for: {query}")
         try:
+            # First check if knowledge base is accessible
+            from knowledge_base import collection
+            kb_count = collection.count()
+            
+            if kb_count == 0:
+                return """⚠️ **Base de connaissances vide**
+
+La base de connaissances PrimLogix n'a pas encore été initialisée.
+
+**Solutions:**
+1. Dans l'interface Streamlit, utilisez le bouton "Initialiser la base de connaissances"
+2. Ou exécutez manuellement: `python ingest.py`
+3. Vérifiez que le dossier `chroma_db/` existe et contient des données
+
+Une fois initialisée, je pourrai rechercher dans la documentation pour vous aider."""
+            
             # Search with more results for better coverage and context
             results = query_knowledge_base(query, n_results=10)
-            if not results['documents'] or not results['documents'][0]:
-                 return "❌ Aucune documentation pertinente trouvée dans la base de connaissances PrimLogix pour cette requête."
+            
+            # Check if results are valid
+            if not results:
+                return f"❌ Erreur: Aucun résultat retourné par la base de connaissances pour la requête: '{query}'"
+            
+            if not results.get('documents') or not results['documents']:
+                return f"❌ Aucune documentation trouvée pour la requête: '{query}'\n\n**Suggestions:**\n- Essayez des termes plus généraux\n- Vérifiez l'orthographe\n- Utilisez des mots-clés techniques de PrimLogix"
+            
+            if not results['documents'][0]:
+                 return f"❌ Aucune documentation pertinente trouvée dans la base de connaissances PrimLogix pour cette requête: '{query}'.\n\n**Base de connaissances:** {kb_count} documents disponibles.\n\n**Suggestions:**\n- Reformulez votre question avec des termes techniques\n- Essayez des mots-clés spécifiques à PrimLogix"
             
             docs = results['documents'][0]
             metadatas = results['metadatas'][0]
@@ -184,9 +208,53 @@ IMPORTANT:
                     response_text += image_section
             
             return response_text
+        except ImportError as e:
+            logger.error(f"Import error in KB search: {e}", exc_info=True)
+            return f"""❌ **Erreur d'importation**
+
+Impossible d'importer le module de base de connaissances.
+
+**Solution:** Vérifiez que tous les modules sont installés:
+```bash
+pip install -r requirements.txt
+```"""
+        except AttributeError as e:
+            logger.error(f"Attribute error in KB search: {e}", exc_info=True)
+            return f"""❌ **Erreur de configuration de la base de connaissances**
+
+La base de connaissances n'est pas correctement configurée.
+
+**Solutions:**
+1. Réinitialisez la base: `python ingest.py`
+2. Vérifiez que le dossier `chroma_db/` existe
+3. Vérifiez les permissions d'accès au dossier"""
         except Exception as e:
             logger.error(f"Error searching KB: {e}", exc_info=True)
-            return f"❌ Erreur lors de la recherche dans la base de connaissances: {str(e)}\n\nDétails techniques: {type(e).__name__}"
+            error_type = type(e).__name__
+            error_msg = str(e)
+            
+            # Provide helpful error messages based on error type
+            if "collection" in error_msg.lower() or "chromadb" in error_msg.lower():
+                return f"""❌ **Erreur d'accès à la base de connaissances**
+
+**Erreur:** {error_type}: {error_msg}
+
+**Solutions:**
+1. Vérifiez que ChromaDB est installé: `pip install chromadb`
+2. Réinitialisez la base: `python ingest.py`
+3. Vérifiez que le dossier `chroma_db/` n'est pas corrompu
+4. Si le problème persiste, supprimez `chroma_db/` et réinitialisez"""
+            else:
+                return f"""❌ **Erreur lors de la recherche**
+
+**Erreur:** {error_type}: {error_msg}
+
+**Requête:** {query}
+
+**Solutions:**
+1. Réessayez avec une requête différente
+2. Vérifiez que la base de connaissances est initialisée
+3. Consultez les logs pour plus de détails"""
 
 
     def run(self, messages):

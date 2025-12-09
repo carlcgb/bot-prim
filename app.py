@@ -201,6 +201,13 @@ if prompt := st.chat_input("Describe the problem..."):
         message_placeholder.markdown("🤔 Thinking...")
         
         try:
+            # Check knowledge base before initializing agent
+            kb_count = collection.count()
+            if kb_count == 0:
+                message_placeholder.warning("⚠️ **Base de connaissances vide** - Le bot ne peut pas rechercher dans la documentation. Utilisez le bouton d'initialisation dans la sidebar.")
+                st.session_state.messages.append({"role": "assistant", "content": "⚠️ Je ne peux pas accéder à la base de connaissances car elle n'est pas initialisée. Veuillez utiliser le bouton d'initialisation dans la sidebar pour charger la documentation PrimLogix."})
+                st.stop()
+            
             # Initialize Agent
             agent = PrimAgent(api_key=api_key, base_url=base_url, model=model_name, provider=provider_type)
             
@@ -276,4 +283,48 @@ if prompt := st.chat_input("Describe the problem..."):
             st.session_state.messages.append({"role": "assistant", "content": response})
             
         except Exception as e:
-            message_placeholder.error(f"Error: {str(e)}")
+            error_msg = str(e)
+            error_type = type(e).__name__
+            
+            # Provide helpful error messages
+            if "API" in error_msg or "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+                detailed_error = f"""❌ **Erreur d'authentification API**
+
+**Erreur:** {error_type}
+
+**Solutions:**
+1. Vérifiez que votre clé API est correcte
+2. Pour Gemini: Obtenez une clé gratuite sur [Google AI Studio](https://aistudio.google.com/)
+3. Vérifiez que la clé API est bien configurée dans les secrets/variables d'environnement
+4. Pour Ollama: Assurez-vous que `ollama serve` est lancé"""
+            elif "model" in error_msg.lower() or "404" in error_msg or "not found" in error_msg.lower():
+                detailed_error = f"""❌ **Modèle non trouvé**
+
+**Erreur:** {error_type}: {error_msg}
+
+**Solutions:**
+1. Vérifiez que le nom du modèle est correct
+2. Pour Gemini: Essayez `gemini-2.5-flash` ou `gemini-2.0-flash`
+3. Pour Ollama: Vérifiez que le modèle est installé: `ollama list`"""
+            elif "knowledge" in error_msg.lower() or "base" in error_msg.lower() or "chromadb" in error_msg.lower():
+                detailed_error = f"""❌ **Erreur de base de connaissances**
+
+**Erreur:** {error_type}: {error_msg}
+
+**Solutions:**
+1. Vérifiez que la base de connaissances est initialisée
+2. Utilisez le bouton d'initialisation dans la sidebar
+3. Ou exécutez: `python ingest.py`
+4. Vérifiez que ChromaDB est installé: `pip install chromadb`"""
+            else:
+                detailed_error = f"""❌ **Erreur inattendue**
+
+**Erreur:** {error_type}: {error_msg}
+
+**Solutions:**
+1. Vérifiez les logs pour plus de détails
+2. Réessayez votre requête
+3. Vérifiez que toutes les dépendances sont installées: `pip install -r requirements.txt`"""
+            
+            message_placeholder.error(detailed_error)
+            st.session_state.messages.append({"role": "assistant", "content": detailed_error})
