@@ -195,10 +195,33 @@ for message in st.session_state.messages:
                                         # Load and display
                                         img = Image.open(BytesIO(img_response.content))
                                         
+                                        # Verify image is valid and has dimensions
+                                        if img.size[0] == 0 or img.size[1] == 0:
+                                            raise ValueError("Invalid image dimensions")
+                                        
+                                        # Calculate max width to prevent stretching while keeping reasonable size
+                                        # Use max width of 600px for grid display (2 columns)
+                                        max_width = 600
+                                        original_width, original_height = img.size
+                                        
+                                        # Only resize if image is larger than max_width
+                                        if original_width > max_width:
+                                            # Calculate new height maintaining aspect ratio
+                                            aspect_ratio = original_height / original_width
+                                            new_width = max_width
+                                            new_height = int(max_width * aspect_ratio)
+                                            # Use LANCZOS resampling for high quality, fallback to ANTIALIAS for older PIL
+                                try:
+                                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                                except AttributeError:
+                                    # Fallback for older PIL versions
+                                    img = img.resize((new_width, new_height), Image.LANCZOS)
+                                        
                                         # Use caption from markdown or default
                                         display_caption = caption if caption and not caption.startswith("Capture d'écran") else f"Capture {idx+1}"
                                         
-                                        st.image(img, caption=display_caption, use_container_width=True)
+                                        # Display with use_container_width=False to preserve aspect ratio
+                                        st.image(img, caption=display_caption, use_container_width=False, width=None)
                                         
                                         # Add link to original image
                                         st.caption(f"[🔗 Ouvrir l'image]({img_url})")
@@ -316,9 +339,34 @@ if prompt := st.chat_input("Describe the problem..."):
                             img_response.raise_for_status()
                             
                             img = Image.open(BytesIO(img_response.content))
+                            
+                            # Verify image is valid and has dimensions
+                            if img.size[0] == 0 or img.size[1] == 0:
+                                raise ValueError("Invalid image dimensions")
+                            
+                            # Calculate max width to prevent stretching while keeping reasonable size
+                            # Use max width of 800px to prevent huge images, but preserve aspect ratio
+                            max_width = 800
+                            original_width, original_height = img.size
+                            
+                            # Only resize if image is larger than max_width
+                            if original_width > max_width:
+                                # Calculate new height maintaining aspect ratio
+                                aspect_ratio = original_height / original_width
+                                new_width = max_width
+                                new_height = int(max_width * aspect_ratio)
+                                # Use LANCZOS resampling for high quality, fallback to ANTIALIAS for older PIL
+                                try:
+                                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                                except AttributeError:
+                                    # Fallback for older PIL versions
+                                    img = img.resize((new_width, new_height), Image.LANCZOS)
+                            
                             caption = img_info["alt"] if img_info["alt"] else f"Capture d'écran {img_idx + 1}"
                             
-                            st.image(img, caption=caption, use_container_width=True)
+                            # Display with use_container_width=False to preserve aspect ratio
+                            # This prevents stretching and weird distortions
+                            st.image(img, caption=caption, use_container_width=False, width=None)
                             st.caption(f"[🔗 Ouvrir l'image]({img_info['url']})")
                         except Exception as e:
                             # If image fails, show as markdown link
