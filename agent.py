@@ -334,15 +334,28 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                     import re
                     def replace_relative_url(match):
                         alt = match.group(1)
-                        url = match.group(2)
+                        url = match.group(2).strip()
+                        original_url = url
+                        
                         if url and not url.startswith('http'):
                             # Convert to absolute
-                            if url.startswith('./'):
-                                url = url[2:]
                             base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
+                            
+                            # Handle ./ prefix
+                            if url.startswith('./'):
+                                url = url[2:]  # Remove ./ prefix
+                            elif url.startswith('/'):
+                                # Absolute path from root
+                                base_url = 'https://aide.primlogix.com'
+                            
+                            # Use urljoin
                             url = urljoin(base_url, url)
+                            
+                            # Final check
                             if not url.startswith('http'):
-                                url = base_url + url.lstrip('/')
+                                # Manual construction as last resort
+                                url = base_url.rstrip('/') + '/' + url.lstrip('/')
+                        
                         return f"![{alt}]({url})"
                     
                     # Replace all relative image URLs in the response
