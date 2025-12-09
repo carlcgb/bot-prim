@@ -7,23 +7,32 @@ import os
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-# Configuration Supabase (à remplir)
+# Configuration Supabase
+# Charge depuis .env ou variables d'environnement
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Charge .env si disponible
+except ImportError:
+    pass  # dotenv optionnel
+
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://qwpdehqkxcvsblkwpbop.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_C59Ew0JS7YvEZPoYA1MkWQ_-UEMZuf6")
-# Récupérez la connection string depuis Supabase Dashboard > Settings > Database > Connection string
-# Format: postgresql://postgres:[PASSWORD]@db.xxxxx.supabase.co:5432/postgres
 SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
 
 if not SUPABASE_DB_URL:
     print("⚠️  SUPABASE_DB_URL non configuré!")
-    print("\nPour obtenir la connection string:")
+    print("\n💡 Essayez Connection Pooling (port 6543) qui est souvent moins bloqué:")
+    print("   python setup_supabase_pooling.py")
+    print("\nOu configurez manuellement:")
     print("1. Allez sur https://supabase.com/dashboard")
     print("2. Sélectionnez votre projet")
     print("3. Settings > Database")
     print("4. Copiez la 'Connection string' (URI mode)")
-    print("5. Remplacez [YOUR-PASSWORD] par votre mot de passe de base de données")
-    print("\nExemple:")
+    print("5. Remplacez [YOUR-PASSWORD] par votre mot de passe")
+    print("\nExemple (port 5432):")
     print("postgresql://postgres:VOTRE_MOT_DE_PASSE@db.qwpdehqkxcvsblkwpbop.supabase.co:5432/postgres")
+    print("\nExemple (Connection Pooling, port 6543 - recommandé si firewall):")
+    print("postgresql://postgres:VOTRE_MOT_DE_PASSE@db.qwpdehqkxcvsblkwpbop.supabase.co:6543/postgres?pgbouncer=true")
     exit(1)
 
 def setup_database():
