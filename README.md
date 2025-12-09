@@ -109,11 +109,16 @@ Configurez les secrets dans :
 
 ## 📚 Base de connaissances
 
-### Initialisation
+### État actuel
 
-La base de connaissances est automatiquement initialisée lors de la première utilisation du CLI.
+✅ **La base de connaissances est incluse dans le repository** (2630 documents, ~34 MB)
+- Disponible immédiatement après déploiement
+- Pas besoin d'initialisation manuelle
+- Fonctionne même si le site PrimLogix est temporairement inaccessible
 
-Pour l'initialiser manuellement :
+### Initialisation manuelle
+
+Si vous devez réinitialiser ou mettre à jour la base :
 
 ```bash
 python ingest.py
@@ -122,15 +127,11 @@ python ingest.py
 Cela va :
 1. Scraper la documentation PrimLogix depuis https://aide.primlogix.com/prim/fr/5-8/
 2. Extraire le contenu et les images
-3. Créer une base de données vectorielle avec ChromaDB
+3. Créer/mettre à jour la base de données vectorielle avec ChromaDB
 
-### Mise à jour
+### Via l'interface Streamlit
 
-Pour mettre à jour la base de connaissances :
-
-```bash
-python ingest.py
-```
+L'app inclut un bouton d'initialisation automatique dans l'interface si la base est vide.
 
 ## 🌐 Déploiement
 
@@ -146,7 +147,9 @@ python ingest.py
    GEMINI_API_KEY = "votre_cle_api_gemini"
    ```
 
-⚠️ **Note importante** : Si vous voyez "Base de connaissances vide" dans l'app déployée, utilisez le bouton d'initialisation dans l'interface ou incluez le dossier `chroma_db/` dans le repository.
+✅ **Base de connaissances incluse** : La base de connaissances (2630 documents) est maintenant incluse dans le repository, donc elle sera automatiquement disponible après le déploiement sur Streamlit Cloud.
+
+Si vous voyez "Base de connaissances vide", utilisez le bouton d'initialisation dans l'interface pour re-scraper la documentation.
 
 ## 📁 Structure du projet
 
