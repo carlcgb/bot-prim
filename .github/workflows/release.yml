@@ -13,6 +13,10 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to create releases
+      id-token: write  # Required for OIDC
+      packages: write  # Required for publishing packages
     
     steps:
     - uses: actions/checkout@v4
@@ -31,7 +35,7 @@ jobs:
       run: python -m build
     
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: dist/*
         generate_release_notes: true
