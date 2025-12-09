@@ -2,354 +2,178 @@
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![GitHub release](https://img.shields.io/github/release/carlcgb/bot-prim.svg)](https://github.com/carlcgb/bot-prim/releases)
-[![Streamlit](https://img.shields.io/badge/Streamlit-Cloud-orange.svg)](https://primbot.streamlit.app/)
+[![GitHub release](https://img.shields.io/badge/release-v1.0.3-green.svg)](https://github.com/carlcgb/bot-prim/releases)
 
-Un agent d'assistance intelligent pour la documentation PrimLogix utilisant Gemini AI.
-
-## 📖 À Propos
-
-**PRIMBOT** est un assistant intelligent spécialement conçu pour aider les utilisateurs de PrimLogix à résoudre leurs problèmes techniques et à naviguer dans la documentation.
-
-### 🎯 Objectif
-
-PRIMBOT vise à :
-- **Simplifier l'accès** à la documentation PrimLogix
-- **Accélérer la résolution** des problèmes techniques
-- **Fournir des réponses contextuelles** avec captures d'écran pertinentes
-- **Offrir une solution 100% gratuite** sans nécessiter de carte de crédit
-
-### ✨ Caractéristiques Principales
-
-- 🔍 **Recherche intelligente** dans toute la documentation PrimLogix
-- 📸 **Captures d'écran pertinentes** extraites automatiquement de l'aide en ligne
-- 🤖 **Support multi-IA** : Gemini (gratuit) et Ollama (100% gratuit, local)
-- 💻 **Interface CLI** pour utilisation en ligne de commande
-- 🌐 **Interface Web** via Streamlit pour une utilisation intuitive
-- 🎯 **Réponses optimisées** pour le débogage avec détails techniques
-
-### 🛠️ Technologies Utilisées
-
-- **AI/ML**: Google Gemini API, Ollama (OpenAI-compatible)
-- **Vector Database**: ChromaDB pour la recherche sémantique
-- **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)
-- **Web Framework**: Streamlit pour l'interface web
-- **Scraping**: BeautifulSoup4, html2text
-- **Language**: Python 3.8+
-
-### 👥 Public Cible
-
-- Utilisateurs de PrimLogix cherchant de l'aide
-- Administrateurs système PrimLogix
-- Support technique
-- Développeurs intégrant PrimLogix
-
-### 🆓 Gratuit et Open Source
-
-PRIMBOT est **100% gratuit** :
-- ✅ Aucune carte de crédit requise
-- ✅ Plan gratuit Gemini généreux (60 req/min, 1500 req/jour)
-- ✅ Option Ollama 100% locale et gratuite
-- ✅ Code source ouvert sur GitHub
-
-### 📊 Statistiques
-
-- 📚 **Documentation indexée** : Toute la documentation PrimLogix (aide.primlogix.com/prim/fr/5-8/)
-- 🖼️ **Images filtrées** : Seules les captures d'écran pertinentes (≥100px, filtrage automatique des icônes)
-- 🔍 **Recherche** : 10 résultats par requête pour un contexte optimal
-- 📸 **Images par réponse** : Jusqu'à 8 captures d'écran les plus pertinentes
-
-### 🚀 Développement
-
-Développé par **Dev-NTIC** pour améliorer l'expérience utilisateur PrimLogix.
-
-**Contributions bienvenues !** N'hésitez pas à ouvrir une issue ou une pull request.
+Assistant intelligent pour la documentation PrimLogix avec Gemini AI et Ollama. **100% gratuit**, aucune carte de crédit requise.
 
 ## ✨ Fonctionnalités
 
-- 🔍 **Recherche intelligente** dans la base de connaissances PrimLogix (10 résultats pour meilleur contexte)
-- 🤖 **Support multi-IA gratuit** : Gemini (gratuit) et Ollama (100% gratuit, local)
-- 📊 **Scores de pertinence** pour évaluer la qualité des résultats
-- 📸 **Affichage de captures d'écran pertinentes** de la documentation (jusqu'à 8 images, filtrage automatique des icônes/logos)
-- 🎯 **Réponses optimisées pour le débogage** avec détails techniques et exemples
-- 🆓 **100% gratuit** - Aucune carte de crédit requise
-- 🇫🇷 **Interface en français**
-- 💻 **Interface CLI** pour utilisation en ligne de commande
-- 🌐 **Interface Web** via Streamlit
+- 🔍 Recherche intelligente dans la documentation PrimLogix (10 résultats, scores de pertinence)
+- 📸 Captures d'écran pertinentes (filtrage automatique des icônes/logos, jusqu'à 8 images)
+- 🤖 Support multi-IA : Gemini (gratuit) et Ollama (100% gratuit, local)
+- 💻 Interface CLI et 🌐 Interface Web (Streamlit)
+- 🎯 Réponses optimisées pour le débogage avec détails techniques
 
-## 🚀 Installation
-
-### Option 1: Installation depuis GitHub (Recommandé)
+## 🚀 Installation Rapide
 
 ```bash
+# Installation depuis GitHub
 pip install git+https://github.com/carlcgb/bot-prim.git
-```
 
-Après l'installation, la commande `primbot` sera disponible dans votre terminal.
-
-### Option 2: Installation depuis une release GitHub
-
-1. Téléchargez la dernière release depuis [GitHub Releases](https://github.com/carlcgb/bot-prim/releases)
-2. Installez le package :
-   ```bash
-   pip install primbot-*.whl
-   # ou
-   pip install primbot-*.tar.gz
-   ```
-
-### Option 3: Installation locale (Développement)
-
-```bash
-git clone https://github.com/carlcgb/bot-prim.git
-cd bot-prim
-pip install -r requirements.txt
-pip install -e .
-```
-
-### ✅ Vérifier l'installation
-
-```bash
+# Vérifier l'installation
 primbot --help
 ```
 
-Si la commande n'est pas trouvée, consultez [docs/CLI_INSTALLATION.md](docs/CLI_INSTALLATION.md) pour ajouter `primbot` à votre PATH.
+## 📖 Utilisation Rapide
 
-## 📖 Utilisation
+### 1. Configuration (Première fois)
 
-### Interface CLI (Ligne de commande)
-
-Une fois installé, la commande `primbot` est disponible dans votre terminal.
-
-#### 🚀 Première utilisation (Setup rapide)
-
-```bash
-# 1. Configurer l'API Gemini (gratuit)
-primbot config --gemini-key VOTRE_CLE_API
-# Ou configuration interactive:
-primbot config
-
-# 2. Initialiser la base de connaissances
-primbot ingest
-
-# 3. Poser une question
-primbot ask "comment changer mon mot de passe"
-```
-
-#### 📋 Commandes disponibles
-
-**Configuration:**
 ```bash
 # Configuration interactive
 primbot config
 
-# Configurer la clé API Gemini
-primbot config --gemini-key VOTRE_CLE
-
-# Configurer Ollama (100% gratuit, local)
-primbot config --ollama-url http://localhost:11434/v1
-
-# Afficher la configuration actuelle
-primbot config --show
+# Ou directement
+primbot config --gemini-key VOTRE_CLE_API
 ```
 
-**Base de connaissances:**
+**Obtenez votre clé API Gemini gratuite :** [Google AI Studio](https://aistudio.google.com/)
+
+### 2. Initialiser la base de connaissances
+
 ```bash
-# Initialiser/mettre à jour la base de connaissances
-primbot ingest
+primbot ingest  # 5-10 minutes, une seule fois
 ```
 
-**Poser des questions:**
+### 3. Utiliser PRIMBOT
+
 ```bash
 # Question unique
 primbot ask "comment changer mon mot de passe"
 
 # Mode interactif (chat)
 primbot ask --interactive
-# ou simplement
-primbot ask -i
-
-# Avec options
-primbot ask "erreur de connexion" --model gemini-2.5-flash --provider gemini
-
-# Utiliser Ollama (local, 100% gratuit)
-primbot ask "question" --provider local --model llama3.1
 ```
 
-**Compatibilité (ancien format):**
-```bash
-# Les anciennes commandes fonctionnent toujours
-primbot "comment changer mon mot de passe"
-primbot --interactive
-```
+📖 **Guide complet étape par étape :** [docs/CLI_USAGE.md](docs/CLI_USAGE.md)
 
-#### 🔧 Configuration
+## 📋 Commandes Principales
 
-La configuration est sauvegardée dans `~/.primbot/config.json` et inclut:
-- Clé API Gemini
-- URL Ollama
-- Modèle par défaut
-- Fournisseur par défaut
+| Commande | Description |
+|----------|-------------|
+| `primbot config` | Configuration interactive |
+| `primbot config --show` | Afficher la configuration |
+| `primbot ingest` | Initialiser/mettre à jour la base de connaissances |
+| `primbot ask "question"` | Poser une question |
+| `primbot ask -i` | Mode interactif (chat) |
+| `primbot ask "q" --model MODEL` | Utiliser un modèle spécifique |
+| `primbot ask "q" --provider local` | Utiliser Ollama (local) |
 
-#### Variables d'environnement
-
-Vous pouvez aussi utiliser des variables d'environnement:
-
-```bash
-# Pour Gemini
-export GEMINI_API_KEY="votre_cle_api_gemini"
-
-# Puis utilisez simplement
-primbot ask "question"
-```
-
-### Interface Web (Streamlit)
+## 🌐 Interface Web
 
 ```bash
 streamlit run app.py
 ```
 
-Puis ouvrez votre navigateur à l'adresse indiquée (généralement `http://localhost:8501`).
+Ouvrez votre navigateur à `http://localhost:8501`
 
 ## 🔧 Configuration
 
 ### Options AI Gratuites
 
-PRIMBOT supporte deux options gratuites :
-
-1. **Google Gemini** (Recommandé) - Plan gratuit généreux, rapide, facile à configurer
-   - Obtenez votre clé gratuite sur [Google AI Studio](https://aistudio.google.com/)
-   - 60 requêtes/minute, 1500 requêtes/jour gratuitement
+1. **Google Gemini** (Recommandé) - [Obtenir une clé gratuite](https://aistudio.google.com/)
+   - 60 requêtes/minute, 1500 requêtes/jour
    - Pas de carte de crédit requise
 
-2. **Ollama** (100% gratuit, local) - Fonctionne sur votre machine, aucune clé API
-   - Téléchargez sur [ollama.ai](https://ollama.ai/)
-   - Installez un modèle: `ollama pull llama3.1`
-   - Lancez: `ollama serve`
+2. **Ollama** (100% gratuit, local) - [Télécharger](https://ollama.ai/)
+   - Fonctionne sur votre machine
+   - Aucune clé API requise
+   - `ollama pull llama3.1` puis `ollama serve`
 
-📖 **Guide complet**: Voir [docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md) pour tous les détails.
+📖 **Guide complet :** [docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)
 
-### Variables d'environnement / Secrets
+### Variables d'Environnement
 
-Le bot utilise les secrets/variables d'environnement suivants :
-
-- `GEMINI_API_KEY` - Clé API Google Gemini (optionnel, seulement pour Gemini)
-
-#### Pour le développement local
-
-Créez un fichier `.streamlit/secrets.toml` :
-
-```toml
-GEMINI_API_KEY = "votre_cle_api_gemini"
+```bash
+export GEMINI_API_KEY="votre_cle_api"
 ```
 
-#### Pour Streamlit Cloud
+Pour Streamlit Cloud, ajoutez dans les Secrets :
+```toml
+GEMINI_API_KEY = "votre_cle_api"
+```
 
-1. Allez dans les paramètres de votre app Streamlit Cloud
-2. Section "Secrets"
-3. Ajoutez :
-   ```toml
-   GEMINI_API_KEY = "votre_cle_api_gemini"
-   ```
-
-#### Pour GitHub Actions / Cloudflare Pages
-
-Configurez les secrets dans :
-- **GitHub**: Settings > Secrets and variables > Actions > New repository secret
-- **Cloudflare Pages**: Settings > Environment variables
-
-## 📚 Base de connaissances
-
-### Initialisation
+## 📚 Base de Connaissances
 
 La base de connaissances doit être initialisée avant la première utilisation :
 
-**Via CLI:**
 ```bash
 primbot ingest
 ```
 
-**Via Streamlit:**
-L'app inclut un bouton d'initialisation automatique dans l'interface si la base est vide.
+**Ce qui se passe :**
+- Scraping de https://aide.primlogix.com/prim/fr/5-8/
+- Extraction du contenu et captures d'écran pertinentes
+- Filtrage automatique des icônes/logos (seules les vraies captures d'écran ≥100px)
+- Création de la base de données vectorielle ChromaDB
 
-**Manuellement:**
-```bash
-python ingest.py
-```
-
-Cela va :
-1. Scraper la documentation PrimLogix depuis https://aide.primlogix.com/prim/fr/5-8/
-2. Extraire le contenu et les **captures d'écran pertinentes** (filtrage automatique des icônes/logos)
-3. Créer/mettre à jour la base de données vectorielle avec ChromaDB
-
-### Filtrage intelligent des images
-
-Le système filtre automatiquement :
-- ✅ **Inclus** : Vraies captures d'écran de l'interface (≥100px, avec mots-clés pertinents)
-- ❌ **Exclus** : Icônes, logos, boutons (<100px, patterns d'icônes dans le nom)
-
-Seules les images pertinentes et de qualité sont stockées pour compléter les réponses.
-
-## 🌐 Déploiement
-
-### Streamlit Cloud (Recommandé)
-
-1. Poussez votre code sur GitHub
-2. Connectez votre repo à [Streamlit Cloud](https://share.streamlit.io)
-3. **Pour l'URL GitHub**, utilisez l'une de ces options :
-   - **Option A (Recommandée)** : Cliquez sur "Switch to interactive picker" et sélectionnez votre repo et le fichier `app.py`
-   - **Option B** : Utilisez l'URL directe : `https://github.com/carlcgb/bot-prim/blob/main/app.py`
-4. Dans les paramètres de l'app, section "Secrets", ajoutez :
-   ```toml
-   GEMINI_API_KEY = "votre_cle_api_gemini"
-   ```
-
-⚠️ **Note importante** : La base de connaissances n'est **pas** incluse dans le repository pour éviter de remplir GitHub. Vous devez l'initialiser après le déploiement :
-
-1. Utilisez le bouton d'initialisation dans l'interface Streamlit
-2. Ou exécutez `primbot ingest` via le CLI
+**Durée :** 5-10 minutes (une seule fois)
 
 ## 📚 Documentation
 
-Toute la documentation est disponible dans le dossier [`docs/`](docs/) :
+- **[CLI_USAGE.md](docs/CLI_USAGE.md)** ⭐ - Guide complet étape par étape
+- **[CLI_INSTALLATION.md](docs/CLI_INSTALLATION.md)** - Installation détaillée et PATH
+- **[FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)** - Options AI gratuites
+- **[AGENT_GUIDE.md](docs/AGENT_GUIDE.md)** - Optimiser vos questions
 
-- **[docs/CLI_USAGE.md](docs/CLI_USAGE.md)** ⭐ : **Guide complet étape par étape** pour utiliser le CLI (installation, configuration, utilisation)
-- **[docs/CLI_INSTALLATION.md](docs/CLI_INSTALLATION.md)** : Guide d'installation du CLI et ajout au PATH
-- **[docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)** ⭐ : Guide complet des options AI gratuites (Gemini et Ollama)
-- **[docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md)** : Guide complet pour obtenir les meilleures réponses de l'agent, comprendre les scores de pertinence, et optimiser vos questions
-- **[docs/RELEASE.md](docs/RELEASE.md)** : Instructions pour créer des releases CLI
-- **[docs/DEPLOY_KB.md](docs/DEPLOY_KB.md)** : Guide de déploiement de la base de connaissances
+## 🌐 Déploiement
 
-## 📁 Structure du projet
+### Streamlit Cloud
+
+1. Poussez votre code sur GitHub
+2. Connectez à [Streamlit Cloud](https://share.streamlit.io)
+3. Ajoutez le secret `GEMINI_API_KEY` dans les paramètres
+4. Initialisez la base de connaissances via le bouton dans l'interface
+
+## 📁 Structure du Projet
 
 ```
 bot-prim/
-├── app.py                 # Interface Streamlit principale
+├── app.py                 # Interface Streamlit
 ├── primbot_cli.py         # Interface CLI
-├── agent.py               # Agent AI avec support Gemini
-├── knowledge_base.py      # Gestion de la base de données vectorielle
-├── scraper.py             # Scraping de la documentation PrimLogix
-├── ingest.py              # Script d'ingestion des données
-├── requirements.txt       # Dépendances Python
-├── setup.py               # Configuration pour installation pip
-├── pyproject.toml         # Configuration Python moderne
-├── MANIFEST.in            # Fichiers à inclure dans le package
-├── packages.txt           # Dépendances système (Streamlit Cloud)
+├── agent.py               # Agent AI (Gemini/Ollama)
+├── knowledge_base.py      # Base de données vectorielle
+├── scraper.py             # Scraping documentation
+├── ingest.py              # Script d'ingestion
+├── storage_local.py       # Stockage local (SQLite)
 ├── docs/                  # Documentation
-│   ├── AGENT_GUIDE.md
-│   ├── RELEASE.md
-│   └── DEPLOY_KB.md
-├── chroma_db/             # Base de données vectorielle (générée localement, non versionnée)
-└── README.md              # Ce fichier
+└── chroma_db/             # Base de données (générée localement)
 ```
+
+## 🛠️ Technologies
+
+- **AI/ML**: Google Gemini API, Ollama (OpenAI-compatible)
+- **Vector DB**: ChromaDB
+- **Embeddings**: Sentence Transformers
+- **Web**: Streamlit
+- **Language**: Python 3.8+
+
+## 📖 À Propos
+
+**PRIMBOT** est un assistant intelligent spécialement conçu pour aider les utilisateurs de PrimLogix à résoudre leurs problèmes techniques et naviguer dans la documentation.
+
+- 🎯 **Objectif** : Simplifier l'accès à la documentation PrimLogix
+- 🆓 **100% gratuit** : Aucune carte de crédit, plan gratuit généreux
+- 📸 **Images pertinentes** : Filtrage intelligent des captures d'écran
+- 💻 **Multi-plateforme** : CLI et interface web
+
+Développé par **Dev-NTIC** pour améliorer l'expérience utilisateur PrimLogix.
 
 ## 🔒 Sécurité
 
-⚠️ **Important**: Ne commitez JAMAIS de clés API dans le code. Utilisez toujours :
-- Streamlit secrets pour Streamlit Cloud
-- Variables d'environnement pour les autres plateformes
-- GitHub Secrets pour GitHub Actions
-
-Le fichier `.gitignore` est configuré pour exclure les fichiers contenant des secrets.
+⚠️ **Important** : Ne commitez JAMAIS de clés API. Utilisez :
+- Streamlit secrets (Streamlit Cloud)
+- Variables d'environnement (local)
+- GitHub Secrets (GitHub Actions)
 
 ## 📝 Licence
 
@@ -357,8 +181,10 @@ Propriétaire - Dev-NTIC
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+Les contributions sont les bienvenues ! Ouvrez une [issue](https://github.com/carlcgb/bot-prim/issues) ou une pull request.
 
-## 📞 Support
+## 🆘 Support
 
-Pour toute question ou problème, ouvrez une issue sur [GitHub](https://github.com/carlcgb/bot-prim/issues).
+- 📖 [Documentation complète](docs/)
+- 🐛 [Signaler un bug](https://github.com/carlcgb/bot-prim/issues)
+- 💬 [Ouvrir une discussion](https://github.com/carlcgb/bot-prim/discussions)
