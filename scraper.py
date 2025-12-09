@@ -42,16 +42,36 @@ def scrape_page(url):
             # Extract image URLs from the page
             images = []
             for img in soup.find_all('img', src=True):
-                img_url = urljoin(url, img['src'])
-                # Only include images from the same domain
-                if 'aide.primlogix.com' in img_url or img_url.startswith('/'):
-                    if img_url.startswith('/'):
+                img_src = img.get('src', '')
+                if not img_src:
+                    continue
+                
+                # Resolve relative URLs to absolute
+                img_url = urljoin(url, img_src)
+                
+                # Clean URL - remove fragments and query params that might cause issues
+                img_url = img_url.split('#')[0]
+                
+                # Only include images from the same domain or relative paths
+                if 'aide.primlogix.com' in img_url or img_src.startswith('/') or img_src.startswith('./'):
+                    # Ensure absolute URL
+                    if not img_url.startswith('http'):
                         img_url = urljoin(BASE_URL, img_url)
-                    images.append({
-                        "url": img_url,
-                        "alt": img.get('alt', ''),
-                        "title": img.get('title', '')
-                    })
+                    
+                    # Validate it's a real image URL
+                    if any(img_url.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']):
+                        images.append({
+                            "url": img_url,
+                            "alt": img.get('alt', '') or img.get('title', '') or 'Screenshot',
+                            "title": img.get('title', '')
+                        })
+                    # Also include images that might be served dynamically but have image-like paths
+                    elif '/images/' in img_url.lower() or '/img/' in img_url.lower() or '/screenshots/' in img_url.lower():
+                        images.append({
+                            "url": img_url,
+                            "alt": img.get('alt', '') or img.get('title', '') or 'Screenshot',
+                            "title": img.get('title', '')
+                        })
             
             title = soup.title.string if soup.title else url
             pages_content.append({

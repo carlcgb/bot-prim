@@ -97,15 +97,36 @@ for message in st.session_state.messages:
                     image_urls = re.findall(image_pattern, image_section)
                     
                     if image_urls:
-                        st.markdown("**Captures d'écran de la documentation:**")
-                        cols = st.columns(min(3, len(image_urls)))  # Max 3 columns
-                        for idx, img_url in enumerate(image_urls[:6]):  # Max 6 images
-                            col_idx = idx % 3
-                            with cols[col_idx]:
-                                try:
-                                    st.image(img_url, caption=f"Image {idx+1}", use_container_width=True)
-                                except Exception as e:
-                                    st.markdown(f"[Image]({img_url})")
+                        # Filter and validate URLs
+                        valid_image_urls = []
+                        for img_url in image_urls[:6]:  # Max 6 images
+                            img_url = img_url.strip()
+                            if img_url and (img_url.startswith('http://') or img_url.startswith('https://')):
+                                valid_image_urls.append(img_url)
+                        
+                        if valid_image_urls:
+                            st.markdown("**📸 Captures d'écran de la documentation:**")
+                            cols = st.columns(min(3, len(valid_image_urls)))  # Max 3 columns
+                            for idx, img_url in enumerate(valid_image_urls):
+                                col_idx = idx % 3
+                                with cols[col_idx]:
+                                    try:
+                                        # Try to display image with download
+                                        import requests
+                                        from io import BytesIO
+                                        from PIL import Image
+                                        
+                                        headers = {
+                                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                                        }
+                                        img_response = requests.get(img_url, headers=headers, timeout=5, stream=True)
+                                        img_response.raise_for_status()
+                                        
+                                        img = Image.open(BytesIO(img_response.content))
+                                        st.image(img, caption=f"Image {idx+1}", use_container_width=True)
+                                    except Exception as e:
+                                        st.markdown(f"[📷 Voir l'image]({img_url})")
+                                        st.caption(f"Erreur: {str(e)[:50]}")
             else:
                 # Regular content without images
                 st.markdown(content)
@@ -162,15 +183,39 @@ if prompt := st.chat_input("Describe the problem..."):
                     
                     if image_urls:
                         st.markdown("**📸 Captures d'écran de la documentation:**")
-                        cols = st.columns(min(3, len(image_urls)))  # Max 3 columns
-                        for idx, img_url in enumerate(image_urls[:6]):  # Max 6 images
-                            col_idx = idx % 3
-                            with cols[col_idx]:
-                                try:
-                                    st.image(img_url, caption=f"Image {idx+1}", use_container_width=True)
-                                except Exception as e:
-                                    # If image fails to load, show as link
-                                    st.markdown(f"[📷 Voir l'image]({img_url})")
+                        # Filter and validate URLs
+                        valid_image_urls = []
+                        for img_url in image_urls[:6]:  # Max 6 images
+                            # Clean URL and validate
+                            img_url = img_url.strip()
+                            if img_url and (img_url.startswith('http://') or img_url.startswith('https://')):
+                                valid_image_urls.append(img_url)
+                        
+                        if valid_image_urls:
+                            cols = st.columns(min(3, len(valid_image_urls)))  # Max 3 columns
+                            for idx, img_url in enumerate(valid_image_urls):
+                                col_idx = idx % 3
+                                with cols[col_idx]:
+                                    try:
+                                        # Try to display image with timeout
+                                        import requests
+                                        from io import BytesIO
+                                        from PIL import Image
+                                        
+                                        # Download image
+                                        headers = {
+                                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                                        }
+                                        img_response = requests.get(img_url, headers=headers, timeout=5, stream=True)
+                                        img_response.raise_for_status()
+                                        
+                                        # Load and display
+                                        img = Image.open(BytesIO(img_response.content))
+                                        st.image(img, caption=f"Image {idx+1}", use_container_width=True)
+                                    except Exception as e:
+                                        # If image fails to load, show as link
+                                        st.markdown(f"[📷 Voir l'image]({img_url})")
+                                        st.caption(f"Erreur: {str(e)[:50]}")
             else:
                 # Regular content without images
                 message_placeholder.markdown(response)
