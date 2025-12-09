@@ -144,42 +144,66 @@ for message in st.session_state.messages:
                 
                 # Display images
                 if image_section:
-                    # Extract image URLs from markdown format ![alt](url)
+                    # Extract image URLs and captions from markdown format ![alt](url)
                     import re
-                    image_pattern = r'!\[.*?\]\((.*?)\)'
-                    image_urls = re.findall(image_pattern, image_section)
+                    # Match full markdown image syntax to get both caption and URL
+                    image_pattern = r'!\[(.*?)\]\((.*?)\)'
+                    image_matches = re.findall(image_pattern, image_section)
                     
-                    if image_urls:
-                        # Filter and validate URLs
-                        valid_image_urls = []
-                        for img_url in image_urls[:6]:  # Max 6 images
+                    if image_matches:
+                        st.markdown("### 📸 Captures d'écran de la documentation")
+                        st.markdown(f"*{len(image_matches)} capture(s) d'écran disponible(s)*")
+                        
+                        # Filter and validate URLs with captions
+                        valid_images = []
+                        for caption, img_url in image_matches[:12]:  # Increased to 12 images
                             img_url = img_url.strip()
                             if img_url and (img_url.startswith('http://') or img_url.startswith('https://')):
-                                valid_image_urls.append(img_url)
+                                valid_images.append((caption.strip() or f"Capture {len(valid_images)+1}", img_url))
                         
-                        if valid_image_urls:
-                            st.markdown("**📸 Captures d'écran de la documentation:**")
-                            cols = st.columns(min(3, len(valid_image_urls)))  # Max 3 columns
-                            for idx, img_url in enumerate(valid_image_urls):
-                                col_idx = idx % 3
+                        if valid_images:
+                            # Display images in a grid (2 columns for better visibility)
+                            num_cols = min(2, len(valid_images))
+                            cols = st.columns(num_cols)
+                            
+                            for idx, (caption, img_url) in enumerate(valid_images):
+                                col_idx = idx % num_cols
                                 with cols[col_idx]:
                                     try:
-                                        # Try to display image with download
+                                        # Try to display image with timeout
                                         import requests
                                         from io import BytesIO
                                         from PIL import Image
                                         
+                                        # Download image with better error handling
                                         headers = {
                                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                                         }
-                                        img_response = requests.get(img_url, headers=headers, timeout=5, stream=True)
+                                        img_response = requests.get(img_url, headers=headers, timeout=10, stream=True)
                                         img_response.raise_for_status()
                                         
+                                        # Load and display
                                         img = Image.open(BytesIO(img_response.content))
-                                        st.image(img, caption=f"Image {idx+1}", use_container_width=True)
-                                    except Exception as e:
+                                        
+                                        # Use caption from markdown or default
+                                        display_caption = caption if caption and not caption.startswith("Capture d'écran") else f"Capture {idx+1}"
+                                        
+                                        st.image(img, caption=display_caption, use_container_width=True)
+                                        
+                                        # Add link to original image
+                                        st.caption(f"[🔗 Ouvrir l'image]({img_url})")
+                                    except requests.exceptions.Timeout:
+                                        st.warning(f"⏱️ Timeout lors du chargement")
                                         st.markdown(f"[📷 Voir l'image]({img_url})")
-                                        st.caption(f"Erreur: {str(e)[:50]}")
+                                    except requests.exceptions.RequestException as e:
+                                        st.warning(f"⚠️ Erreur de chargement")
+                                        st.markdown(f"[📷 Voir l'image]({img_url})")
+                                    except Exception as e:
+                                        # If image fails to load, show as link
+                                        st.warning(f"⚠️ Impossible d'afficher l'image")
+                                        st.markdown(f"[📷 Voir l'image]({img_url})")
+                                        if "PIL" not in str(e):  # Don't show PIL errors to user
+                                            st.caption(f"Erreur: {str(e)[:50]}")
             else:
                 # Regular content without images
                 st.markdown(content)
