@@ -229,7 +229,7 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                 response_text += f", {len(all_images)} image(s) associée(s)"
             
             # Add image URLs at the end in a special format that can be parsed
-            # Prioritize images from most relevant documents (earlier in results)
+            # Filter and prioritize images by relevance score
             if all_images:
                 # Remove duplicates while preserving order (most relevant first)
                 unique_images = []
@@ -239,14 +239,33 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         seen_img_urls.add(img['url'])
                         unique_images.append(img)
                 
-                if unique_images:
-                    # Increase to 15 images for better coverage of interface elements
+                # Filter images by relevance score - only keep relevant images
+                # Images from documents with relevance_score >= 40% are considered relevant
+                relevant_images = []
+                for img in unique_images:
+                    relevance_score = img.get('relevance_score')
+                    # Include images if:
+                    # 1. They come from highly relevant documents (score >= 40%)
+                    # 2. Or they have no score (include them to be safe)
+                    if relevance_score is None or relevance_score >= 40:
+                        relevant_images.append(img)
+                
+                # Sort by relevance score (highest first), then by document order
+                relevant_images.sort(key=lambda x: (
+                    x.get('relevance_score', 0) if x.get('relevance_score') is not None else 0
+                ), reverse=True)
+                
+                # Limit to top 8 most relevant images to avoid overwhelming the response
+                # This ensures images complement the answer without being excessive
+                top_images = relevant_images[:8]
+                
+                if top_images:
                     # Add descriptive section header with instructions for the agent
-                    image_section = "\n\n---\n\n## 📸 Captures d'écran de l'interface PrimLogix\n\n"
-                    image_section += f"*{len(unique_images)} capture(s) d'écran de l'interface trouvée(s) dans la documentation*\n\n"
-                    image_section += "**IMPORTANT pour l'agent:** Utilise ces images pour guider l'utilisateur étape par étape. Référence-les dans ta réponse et explique ce qu'elles montrent.\n\n"
+                    image_section = "\n\n---\n\n## 📸 Captures d'écran pertinentes de l'interface PrimLogix\n\n"
+                    image_section += f"*{len(top_images)} capture(s) d'écran pertinente(s) extraite(s) de la documentation officielle*\n\n"
+                    image_section += "**IMPORTANT pour l'agent:** Ces images proviennent directement de l'aide en ligne PrimLogix et complètent la réponse. Utilise-les pour guider l'utilisateur visuellement. Référence-les explicitement dans ta réponse (ex: 'Comme on peut le voir dans l'image 1...') et explique ce qu'elles montrent.\n\n"
                     
-                    for idx, img in enumerate(unique_images[:15], 1):  # Up to 15 images
+                    for idx, img in enumerate(top_images, 1):  # Top 8 most relevant images
                         # Build comprehensive description
                         description_parts = []
                         
@@ -260,13 +279,33 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                         
                         # Add document context if available
                         if img.get('document_title'):
-                            description_parts.append(f"(Source: {img['document_title']})")
+                            description_parts.append(f"Source: {img['document_title']}")
+                        
+                        # Add relevance score if available
+                        relevance_score = img.get('relevance_score')
+                        if relevance_score is not None:
+                            if relevance_score >= 80:
+                                relevance_label = "Très pertinent"
+                            elif relevance_score >= 60:
+                                relevance_label = "Pertinent"
+                            elif relevance_score >= 40:
+                                relevance_label = "Modérément pertinent"
+                            else:
+                                relevance_label = "Peu pertinent"
+                            description_parts.append(f"Pertinence: {relevance_label} ({relevance_score}%)")
                         
                         # Add caption if available
                         if img.get('caption'):
                             description_parts.append(f"Légende: {img['caption']}")
                         
-                        # Combine into final description
+                        # Combine into final description - prioritize context and description
+                        # This helps the agent understand what the image shows
+                        if img.get('context'):
+                            # Add context first as it's most relevant
+                            context = img.get('context', '')[:100]  # Limit context length
+                            if context:
+                                description_parts.insert(0, f"Contexte: {context}")
+                        
                         alt_text = " | ".join(description_parts) if description_parts else f'Capture d\'écran {idx} de l\'interface PrimLogix'
                         
                         # Clean alt text for better display
