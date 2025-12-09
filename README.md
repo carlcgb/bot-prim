@@ -27,7 +27,19 @@ Un agent d'assistance intelligent pour la documentation PrimLogix utilisant Gemi
 pip install git+https://github.com/carlcgb/bot-prim.git
 ```
 
-### Option 2: Installation locale
+Après l'installation, la commande `primbot` sera disponible dans votre terminal.
+
+### Option 2: Installation depuis une release GitHub
+
+1. Téléchargez la dernière release depuis [GitHub Releases](https://github.com/carlcgb/bot-prim/releases)
+2. Installez le package :
+   ```bash
+   pip install primbot-*.whl
+   # ou
+   pip install primbot-*.tar.gz
+   ```
+
+### Option 3: Installation locale (Développement)
 
 ```bash
 git clone https://github.com/carlcgb/bot-prim.git
@@ -35,6 +47,14 @@ cd bot-prim
 pip install -r requirements.txt
 pip install -e .
 ```
+
+### ✅ Vérifier l'installation
+
+```bash
+primbot --help
+```
+
+Si la commande n'est pas trouvée, consultez [docs/CLI_INSTALLATION.md](docs/CLI_INSTALLATION.md) pour ajouter `primbot` à votre PATH.
 
 ## 📖 Utilisation
 
@@ -228,6 +248,7 @@ Si vous voyez "Base de connaissances vide", utilisez le bouton d'initialisation 
 Toute la documentation est disponible dans le dossier [`docs/`](docs/) :
 
 - **[docs/FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)** ⭐ : Guide complet des options AI gratuites (Gemini et Ollama)
+- **[docs/CLI_INSTALLATION.md](docs/CLI_INSTALLATION.md)** : Guide d'installation du CLI et ajout au PATH
 - **[docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md)** : Guide complet pour obtenir les meilleures réponses de l'agent, comprendre les scores de pertinence, et optimiser vos questions
 - **[docs/RELEASE.md](docs/RELEASE.md)** : Instructions pour créer des releases CLI
 - **[docs/DEPLOY_KB.md](docs/DEPLOY_KB.md)** : Guide de déploiement de la base de connaissances
@@ -242,7 +263,6 @@ bot-prim/
 ├── knowledge_base.py      # Gestion de la base de données vectorielle
 ├── scraper.py             # Scraping de la documentation PrimLogix
 ├── ingest.py              # Script d'ingestion des données
-├── init_kb.py             # Script d'initialisation de la KB
 ├── requirements.txt       # Dépendances Python
 ├── setup.py               # Configuration pour installation pip
 ├── pyproject.toml         # Configuration Python moderne

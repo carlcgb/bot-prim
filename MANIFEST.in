@@ -1,7 +1,14 @@
 include README.md
 include requirements.txt
 include LICENSE
+include MANIFEST.in
+include setup.py
+include pyproject.toml
+recursive-include docs *.md
 recursive-include .streamlit *.toml.example
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
+recursive-exclude * *.pyc
+recursive-exclude chroma_db *.sqlite3
+recursive-exclude chroma_db *.db
 
