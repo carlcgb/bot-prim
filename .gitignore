@@ -48,11 +48,11 @@ ENV/
 !.streamlit/config.toml
 !.streamlit/secrets.toml.example
 
-# ChromaDB
-# chroma_db/  # Décommentez pour exclure la base de connaissances du repo
-# *.db        # Décommentez pour exclure les fichiers .db
-# *.sqlite3   # Décommentez pour exclure les fichiers .sqlite3
-# Note: Pour déployer avec la base de connaissances, gardez ces lignes commentées
+# ChromaDB - Exclure la base de données pour éviter de remplir GitHub
+chroma_db/
+*.db
+*.sqlite3
+# Note: La base de connaissances doit être générée localement avec 'primbot ingest'
 
 # Scraped data
 scraped_data.json

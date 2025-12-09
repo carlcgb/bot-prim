@@ -12,7 +12,7 @@ Un agent d'assistance intelligent pour la documentation PrimLogix utilisant Gemi
 - 🔍 **Recherche intelligente** dans la base de connaissances PrimLogix (10 résultats pour meilleur contexte)
 - 🤖 **Support multi-IA gratuit** : Gemini (gratuit) et Ollama (100% gratuit, local)
 - 📊 **Scores de pertinence** pour évaluer la qualité des résultats
-- 📸 **Affichage de captures d'écran** de la documentation (jusqu'à 8 images)
+- 📸 **Affichage de captures d'écran pertinentes** de la documentation (jusqu'à 8 images, filtrage automatique des icônes/logos)
 - 🎯 **Réponses optimisées pour le débogage** avec détails techniques et exemples
 - 🆓 **100% gratuit** - Aucune carte de crédit requise
 - 🇫🇷 **Interface en français**
@@ -201,29 +201,35 @@ Configurez les secrets dans :
 
 ## 📚 Base de connaissances
 
-### État actuel
+### Initialisation
 
-✅ **La base de connaissances est incluse dans le repository** (2630 documents, ~34 MB)
-- Disponible immédiatement après déploiement
-- Pas besoin d'initialisation manuelle
-- Fonctionne même si le site PrimLogix est temporairement inaccessible
+La base de connaissances doit être initialisée avant la première utilisation :
 
-### Initialisation manuelle
+**Via CLI:**
+```bash
+primbot ingest
+```
 
-Si vous devez réinitialiser ou mettre à jour la base :
+**Via Streamlit:**
+L'app inclut un bouton d'initialisation automatique dans l'interface si la base est vide.
 
+**Manuellement:**
 ```bash
 python ingest.py
 ```
 
 Cela va :
 1. Scraper la documentation PrimLogix depuis https://aide.primlogix.com/prim/fr/5-8/
-2. Extraire le contenu et les images
+2. Extraire le contenu et les **captures d'écran pertinentes** (filtrage automatique des icônes/logos)
 3. Créer/mettre à jour la base de données vectorielle avec ChromaDB
 
-### Via l'interface Streamlit
+### Filtrage intelligent des images
 
-L'app inclut un bouton d'initialisation automatique dans l'interface si la base est vide.
+Le système filtre automatiquement :
+- ✅ **Inclus** : Vraies captures d'écran de l'interface (≥100px, avec mots-clés pertinents)
+- ❌ **Exclus** : Icônes, logos, boutons (<100px, patterns d'icônes dans le nom)
+
+Seules les images pertinentes et de qualité sont stockées pour compléter les réponses.
 
 ## 🌐 Déploiement
 
@@ -239,9 +245,10 @@ L'app inclut un bouton d'initialisation automatique dans l'interface si la base 
    GEMINI_API_KEY = "votre_cle_api_gemini"
    ```
 
-✅ **Base de connaissances incluse** : La base de connaissances (2630 documents) est maintenant incluse dans le repository, donc elle sera automatiquement disponible après le déploiement sur Streamlit Cloud.
+⚠️ **Note importante** : La base de connaissances n'est **pas** incluse dans le repository pour éviter de remplir GitHub. Vous devez l'initialiser après le déploiement :
 
-Si vous voyez "Base de connaissances vide", utilisez le bouton d'initialisation dans l'interface pour re-scraper la documentation.
+1. Utilisez le bouton d'initialisation dans l'interface Streamlit
+2. Ou exécutez `primbot ingest` via le CLI
 
 ## 📚 Documentation
 
@@ -272,7 +279,7 @@ bot-prim/
 │   ├── AGENT_GUIDE.md
 │   ├── RELEASE.md
 │   └── DEPLOY_KB.md
-├── chroma_db/             # Base de données vectorielle (incluse)
+├── chroma_db/             # Base de données vectorielle (générée localement, non versionnée)
 └── README.md              # Ce fichier
 ```
 
