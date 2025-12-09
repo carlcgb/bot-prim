@@ -163,15 +163,25 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                     try:
                         images = json.loads(images_json)
                         for img in images:
-                            if img['url'] not in seen_urls:
-                                seen_urls.add(img['url'])
+                            # Convert relative URLs to absolute URLs immediately
+                            img_url = img.get('url', '')
+                            if img_url and not img_url.startswith('http'):
+                                # Convert relative URL to absolute using document URL
+                                base_url = source if source.startswith('http') else 'https://aide.primlogix.com/prim/fr/5-8/'
+                                img_url = urljoin(base_url, img_url)
+                                img['url'] = img_url  # Update URL in the image dict
+                            
+                            if img_url not in seen_urls:
+                                seen_urls.add(img_url)  # Use absolute URL for deduplication
                                 # Add document context to image for better understanding
                                 img_with_context = img.copy()
                                 img_with_context['document_title'] = title
                                 img_with_context['document_url'] = source
                                 img_with_context['relevance_score'] = relevance_score
+                                img_with_context['url'] = img_url  # Ensure absolute URL
                                 all_images.append(img_with_context)
-                    except:
+                    except Exception as e:
+                        logger.debug(f"Error parsing images: {e}")
                         pass
                 
                 # Build detailed source info
