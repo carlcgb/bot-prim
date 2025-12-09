@@ -11,6 +11,7 @@ warnings.filterwarnings('ignore', message='.*ALTS.*')
 
 from knowledge_base import query_knowledge_base
 import json
+from urllib.parse import urljoin
 
 import google.generativeai as genai
 from google.protobuf.json_format import MessageToDict
@@ -242,8 +243,19 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                             alt_text = f"Capture d'écran {idx} de l'interface PrimLogix"
                         
                         # Add image with enhanced description
+                        # Ensure absolute URL - convert relative URLs to absolute
+                        img_url = img['url']
+                        if not img_url.startswith('http'):
+                            # Convert relative URL to absolute using document URL
+                            base_url = img.get('document_url', 'https://aide.primlogix.com/prim/fr/5-8/')
+                            if not base_url.startswith('http'):
+                                base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
+                            img_url = urljoin(base_url, img_url)
+                            # Update the image URL in the dict for consistency
+                            img['url'] = img_url
+                        
                         image_section += f"### Image {idx}\n\n"
-                        image_section += f"![{alt_text}]({img['url']})\n\n"
+                        image_section += f"![{alt_text}]({img_url})\n\n"
                         
                         # Add detailed caption with all available information
                         caption_parts = []
