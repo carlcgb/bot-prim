@@ -93,12 +93,14 @@ def query_knowledge_base(query, n_results=10):
     
     Returns:
         Dictionary with 'documents', 'metadatas', 'distances', and 'ids'
+        Note: 'ids' are automatically included by ChromaDB, don't need to be in include
     """
     results = collection.query(
         query_texts=[query],
         n_results=n_results,
-        include=['documents', 'metadatas', 'distances', 'ids']
+        include=['documents', 'metadatas', 'distances']
     )
+    # ChromaDB automatically includes 'ids' in results, no need to specify it
     return results
 
 if __name__ == "__main__":
