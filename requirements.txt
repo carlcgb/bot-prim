@@ -1,0 +1,8 @@
+streamlit
+openai
+beautifulsoup4
+chromadb
+sentence-transformers
+html2text
+requests
+google-generativeai
