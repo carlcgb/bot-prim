@@ -155,8 +155,11 @@ Si vous voyez "Base de connaissances vide", utilisez le bouton d'initialisation 
 
 ## 📚 Documentation
 
-- **[AGENT_GUIDE.md](AGENT_GUIDE.md)** : Guide complet pour obtenir les meilleures réponses de l'agent, comprendre les scores de pertinence, et optimiser vos questions
-- **[RELEASE.md](RELEASE.md)** : Instructions pour créer des releases CLI
+Toute la documentation est disponible dans le dossier [`docs/`](docs/) :
+
+- **[docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md)** : Guide complet pour obtenir les meilleures réponses de l'agent, comprendre les scores de pertinence, et optimiser vos questions
+- **[docs/RELEASE.md](docs/RELEASE.md)** : Instructions pour créer des releases CLI
+- **[docs/DEPLOY_KB.md](docs/DEPLOY_KB.md)** : Guide de déploiement de la base de connaissances
 
 ## 📁 Structure du projet
 
@@ -165,11 +168,20 @@ bot-prim/
 ├── app.py                 # Interface Streamlit principale
 ├── primbot_cli.py         # Interface CLI
 ├── agent.py               # Agent AI avec support Gemini
-├── knowledge_base.py       # Gestion de la base de données vectorielle
+├── knowledge_base.py      # Gestion de la base de données vectorielle
 ├── scraper.py             # Scraping de la documentation PrimLogix
 ├── ingest.py              # Script d'ingestion des données
+├── init_kb.py             # Script d'initialisation de la KB
 ├── requirements.txt       # Dépendances Python
 ├── setup.py               # Configuration pour installation pip
+├── pyproject.toml         # Configuration Python moderne
+├── MANIFEST.in            # Fichiers à inclure dans le package
+├── packages.txt           # Dépendances système (Streamlit Cloud)
+├── docs/                  # Documentation
+│   ├── AGENT_GUIDE.md
+│   ├── RELEASE.md
+│   └── DEPLOY_KB.md
+├── chroma_db/             # Base de données vectorielle (incluse)
 └── README.md              # Ce fichier
 ```
 

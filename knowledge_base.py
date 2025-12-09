@@ -1,6 +1,5 @@
 import chromadb
 from chromadb.utils import embedding_functions
-import uuid
 import os
 
 # Initialize ChromaDB Client

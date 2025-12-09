@@ -13,9 +13,7 @@ from knowledge_base import query_knowledge_base
 import json
 
 import google.generativeai as genai
-from google.generativeai.types import content_types
 from google.protobuf.json_format import MessageToDict
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +73,7 @@ IMPORTANT:
 
 
     def _search_kb(self, query):
-        print(f"🔍 DEBUG: Searching KB for '{query}'")
+        logger.debug(f"Searching KB for: {query}")
         try:
             # Search with more results for better coverage and context
             results = query_knowledge_base(query, n_results=10)
