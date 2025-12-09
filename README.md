@@ -40,35 +40,88 @@ pip install -e .
 
 ### Interface CLI (Ligne de commande)
 
-Une fois installé, utilisez la commande `primbot` :
+Une fois installé, la commande `primbot` est disponible dans votre terminal.
+
+#### 🚀 Première utilisation (Setup rapide)
 
 ```bash
-# Mode interactif (chat) - Recommandé pour la première utilisation
-primbot --interactive
+# 1. Configurer l'API Gemini (gratuit)
+primbot config --gemini-key VOTRE_CLE_API
+# Ou configuration interactive:
+primbot config
 
-# Le CLI va :
-# 1. Demander votre clé API Gemini si non configurée
-# 2. Vérifier et initialiser la base de connaissances si vide
-# 3. Lancer une session de chat interactive
+# 2. Initialiser la base de connaissances
+primbot ingest
 
-# Question unique
-primbot "comment changer mon mot de passe"
-
-# Avec options
-primbot "erreur de connexion" --model gemini-2.5-flash
-
-# Aide
-primbot --help
+# 3. Poser une question
+primbot ask "comment changer mon mot de passe"
 ```
 
-#### Variables d'environnement pour CLI
+#### 📋 Commandes disponibles
+
+**Configuration:**
+```bash
+# Configuration interactive
+primbot config
+
+# Configurer la clé API Gemini
+primbot config --gemini-key VOTRE_CLE
+
+# Configurer Ollama (100% gratuit, local)
+primbot config --ollama-url http://localhost:11434/v1
+
+# Afficher la configuration actuelle
+primbot config --show
+```
+
+**Base de connaissances:**
+```bash
+# Initialiser/mettre à jour la base de connaissances
+primbot ingest
+```
+
+**Poser des questions:**
+```bash
+# Question unique
+primbot ask "comment changer mon mot de passe"
+
+# Mode interactif (chat)
+primbot ask --interactive
+# ou simplement
+primbot ask -i
+
+# Avec options
+primbot ask "erreur de connexion" --model gemini-2.5-flash --provider gemini
+
+# Utiliser Ollama (local, 100% gratuit)
+primbot ask "question" --provider local --model llama3.1
+```
+
+**Compatibilité (ancien format):**
+```bash
+# Les anciennes commandes fonctionnent toujours
+primbot "comment changer mon mot de passe"
+primbot --interactive
+```
+
+#### 🔧 Configuration
+
+La configuration est sauvegardée dans `~/.primbot/config.json` et inclut:
+- Clé API Gemini
+- URL Ollama
+- Modèle par défaut
+- Fournisseur par défaut
+
+#### Variables d'environnement
+
+Vous pouvez aussi utiliser des variables d'environnement:
 
 ```bash
-# Pour Gemini (par défaut)
+# Pour Gemini
 export GEMINI_API_KEY="votre_cle_api_gemini"
 
 # Puis utilisez simplement
-primbot --interactive
+primbot ask "question"
 ```
 
 ### Interface Web (Streamlit)

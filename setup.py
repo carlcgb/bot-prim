@@ -33,6 +33,8 @@ setup(
             "primbot=primbot_cli:main",
         ],
     },
+    # Ensure scripts are installed in a location that's in PATH
+    scripts=[],
     include_package_data=True,
 )
 
