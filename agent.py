@@ -207,7 +207,7 @@ class PrimAgent:
             # Build context with filtered and sorted results
             context = f"📚 Résultats de recherche dans la documentation PrimLogix pour: '{query}'\n"
             context += f"Trouvé {len(filtered_results)} document(s) pertinent(s) (filtrés par pertinence ≥30%)\n\n"
-            context += "**⚠️ IMPORTANT : Utilise UNIQUEMENT les informations des documents ci-dessous. Les documents sont triés par pertinence (score le plus élevé en premier). Privilégie les documents avec score 🟢 (≥70%) ou 🟡 (≥50%).**\n\n"
+            context += "**⚠️ IMPORTANT : Utilise UNIQUEMENT les informations des documents ci-dessous. Les documents sont triés par pertinence (score le plus élevé en premier). Privilégie les documents avec score 🟢 (≥70%) ou 🟡 (≥50%), mais UTILISE AUSSI les documents avec score 🟠 (≥30%) - ils contiennent probablement l'information recherchée.**\n\n"
             
             seen_docs = set()  # Avoid exact duplicate content
             all_images = []  # Collect all relevant images
@@ -576,7 +576,8 @@ UTILISATION DES OUTILS - CRITIQUE POUR PERTINENCE :
   - Exemple : "### Étape 1: Accéder au profil utilisateur\nDans PrimLogix, allez dans **Session > Paramètres utilisateur**.\n![Capture d'écran montrant le menu Session avec Paramètres utilisateur](url_image)"
 - **RECHERCHE INTERNET** : Si tu utilises search_internet et que des résultats sont trouvés, **TU DOIS INCLURE les URLs des sources** dans ta réponse. Crée une section "🔗 Sources Internet" avec les liens cliquables vers les pages utilisées.
 - **INCLUS TOUJOURS les liens** vers la documentation PrimLogix - utilise les URLs des documents fournis dans les résultats de recherche
-- **Si aucun document pertinent (score <40%)** : dis clairement que l'information n'est pas disponible, ne donne PAS de réponses génériques
+- **Si aucun document pertinent (score <30%)** : dis clairement que l'information n'est pas disponible, ne donne PAS de réponses génériques
+- **Si tu as des documents avec score ≥30%** : UTILISE-LES pour répondre, même si les scores ne sont pas très élevés. Ces documents contiennent probablement l'information recherchée.
 
 LIENS VERS LA DOCUMENTATION (OBLIGATOIRE):
 - **TOUJOURS inclure des liens cliquables** vers les pages de l'aide en ligne que tu utilises
