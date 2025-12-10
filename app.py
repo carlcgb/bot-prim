@@ -52,7 +52,7 @@ from storage_local import get_storage
 import json
 from pathlib import Path
 
-st.set_page_config(page_title="DEBUGEX - Agent IA PrimLogix", layout="wide")
+st.set_page_config(page_title="DEBUGEX - Agent IA PrimLogix", layout="centered")
 
 # Add CSS and JavaScript for image modal
 st.markdown("""
