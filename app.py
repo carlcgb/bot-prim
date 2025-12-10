@@ -570,12 +570,25 @@ if prompt := st.chat_input("Describe the problem..."):
             
             response = agent.run(st.session_state.messages.copy())
             
-            # Keep images but clean up other unwanted content
+            # Clean up response formatting while preserving markdown structure
             # Remove "Captures d'écran de l'interface" section header at the end (but keep images in steps)
             response = re.sub(r'##\s*📸\s*Captures\s*d\'écran\s*pertinentes\s*de\s*l\'interface\s*PrimLogix.*?(?=\n##|\n---|$)', '', response, flags=re.IGNORECASE | re.DOTALL)
-            # Remove duplicate image sections at the end, but keep images within steps
-            # Clean up multiple empty lines
-            response = re.sub(r'\n\s*\n\s*\n+', '\n\n', response)
+            
+            # Clean up excessive empty lines (more than 2 consecutive newlines)
+            response = re.sub(r'\n{3,}', '\n\n', response)
+            
+            # Ensure proper spacing around headers
+            response = re.sub(r'\n(#{1,6}\s+[^\n]+)\n([^\n#])', r'\n\n\1\n\n\2', response)
+            
+            # Clean up trailing whitespace on lines
+            response = '\n'.join(line.rstrip() for line in response.split('\n'))
+            
+            # Ensure proper spacing around lists
+            response = re.sub(r'\n(\s*[-*+]\s+)', r'\n\n\1', response)
+            response = re.sub(r'(\n\s*[-*+]\s+[^\n]+)\n([^\s\-*+])', r'\1\n\n\2', response)
+            
+            # Final cleanup of excessive empty lines
+            response = re.sub(r'\n{3,}', '\n\n', response)
             
             # Check if response contains images
             image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
