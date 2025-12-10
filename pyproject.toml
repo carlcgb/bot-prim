@@ -37,8 +37,7 @@ dependencies = [
     "requests",
     "google-generativeai",
     "pillow",
-    "openai>=1.0.0",
-    "duckduckgo-search",
+    "ddgs",
 ]
 
 [project.scripts]
