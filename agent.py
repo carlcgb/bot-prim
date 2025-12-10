@@ -1,3 +1,13 @@
+# Suppress warnings BEFORE any imports
+import warnings
+import os
+warnings.filterwarnings('ignore', category=RuntimeWarning)
+warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
+# Suppress Google ALTS warnings BEFORE importing google.generativeai
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
+os.environ['GLOG_minloglevel'] = '2'
+os.environ['PYTHONWARNINGS'] = 'ignore'
+
 try:
     from ddgs import DDGS
 except ImportError:

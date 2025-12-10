@@ -4,9 +4,18 @@ PRIMBOT CLI - Command Line Interface for PrimLogix Debug Agent
 Usage: primbot [command] [options]
 """
 
+# Suppress warnings BEFORE any imports
+import warnings
+import os
+warnings.filterwarnings('ignore', category=RuntimeWarning)
+warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
+# Suppress Google ALTS warnings BEFORE any Google imports
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
+os.environ['GLOG_minloglevel'] = '2'
+os.environ['PYTHONWARNINGS'] = 'ignore'
+
 import argparse
 import sys
-import os
 import json
 import re
 import threading
