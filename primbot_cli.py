@@ -79,6 +79,7 @@ class ThinkingAnimation:
         self.original_stdout = None
         self.original_stderr = None
         self.null_stream = None
+        self.original_logging_handlers = []
     
     def _animate(self):
         """Animation loop."""
@@ -86,7 +87,7 @@ class ThinkingAnimation:
             char = self.spinner_chars[self.current_char % len(self.spinner_chars)]
             # Write directly to original stdout to bypass redirection
             if self.original_stdout:
-                self.original_stdout.write(f'\rPRIMBOT: {char} Réflexion en cours...')
+                self.original_stdout.write(f'\r{char} Réflexion en cours...')
                 self.original_stdout.flush()
             self.current_char += 1
             time.sleep(0.1)
@@ -104,6 +105,17 @@ class ThinkingAnimation:
         sys.stdout = self.null_stream
         sys.stderr = self.null_stream
         
+        # Disable logging output during thinking
+        import logging
+        root_logger = logging.getLogger()
+        self.original_logging_handlers = root_logger.handlers[:]
+        # Remove all handlers temporarily
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+        # Add a null handler
+        null_handler = logging.NullHandler()
+        root_logger.addHandler(null_handler)
+        
         # Start animation
         self.stop_event.clear()
         self.thread = threading.Thread(target=self._animate, daemon=True)
@@ -117,6 +129,16 @@ class ThinkingAnimation:
         self.stop_event.set()
         if self.thread:
             self.thread.join(timeout=0.5)
+        
+        # Restore logging handlers
+        import logging
+        root_logger = logging.getLogger()
+        # Remove null handler
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+        # Restore original handlers
+        for handler in self.original_logging_handlers:
+            root_logger.addHandler(handler)
         
         # Restore original streams
         sys.stdout = self.original_stdout
