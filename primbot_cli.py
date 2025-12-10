@@ -122,6 +122,12 @@ def cmd_ask(args):
     """Ask a question to PRIMBOT."""
     config = load_config()
     
+    # Handle query - join all words if it's a list
+    if isinstance(args.query, list):
+        query = ' '.join(args.query) if args.query else None
+    else:
+        query = args.query
+    
     # Get API key
     api_key = args.api_key
     if not api_key:
@@ -173,7 +179,7 @@ def cmd_ask(args):
         sys.exit(1)
     
     # Interactive mode
-    if args.interactive or not args.query:
+    if args.interactive or not query:
         print("🤖 PRIMBOT CLI - PrimLogix Debug Agent")
         if kb_count > 0:
             print(f"📚 Base de connaissances: {kb_count} documents")
@@ -214,7 +220,7 @@ def cmd_ask(args):
     # Single query mode
     else:
         try:
-            messages = [{"role": "user", "content": args.query}]
+            messages = [{"role": "user", "content": query}]
             response = agent.run(messages)
             # Remove images from response for CLI (markdown image syntax: ![alt](url))
             response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
@@ -256,7 +262,7 @@ Exemples:
     
     # Ask command (main command)
     ask_parser = subparsers.add_parser('ask', help='Poser une question à PRIMBOT (commande par défaut)')
-    ask_parser.add_argument('query', nargs='?', help='Question à poser')
+    ask_parser.add_argument('query', nargs='*', help='Question à poser (peut être plusieurs mots, utilisez des guillemets pour les phrases)')
     ask_parser.add_argument('--api-key', '--key', dest='api_key', help='Clé API Gemini (prioritaire sur config)')
     ask_parser.add_argument('--model', help='Nom du modèle Gemini')
     ask_parser.add_argument('--interactive', '-i', action='store_true', help='Mode interactif')
@@ -283,7 +289,17 @@ Exemples:
                 parser.print_help()
                 return
             elif not remaining[0].startswith('--'):
-                ask_args.query = remaining[0]
+                # Join all remaining non-option arguments as the query
+                query_parts = []
+                i = 0
+                while i < len(remaining):
+                    if remaining[i].startswith('--'):
+                        # Stop at first option flag
+                        break
+                    if remaining[i] not in ['--interactive', '-i', '--help', '-h']:
+                        query_parts.append(remaining[i])
+                    i += 1
+                ask_args.query = ' '.join(query_parts) if query_parts else None
             
             # Parse other options
             i = 1
