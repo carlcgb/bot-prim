@@ -19,12 +19,16 @@ if USE_QDRANT and QDRANT_URL and QDRANT_API_KEY:
         logger.info(f"Using Qdrant Cloud for knowledge base: {QDRANT_URL[:50] if QDRANT_URL else 'N/A'}...")
         try:
             from knowledge_base_qdrant import QdrantKnowledgeBase
-        except (ImportError, KeyError, AttributeError) as import_error:
+        except (ImportError, KeyError, AttributeError, Exception) as import_error:
             logger.warning(f"Could not import QdrantKnowledgeBase: {import_error}")
-            raise import_error
-        qdrant_client = QdrantKnowledgeBase(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-        collection = qdrant_client  # Compatible interface
-        logger.info("✅ Qdrant Cloud initialized successfully")
+            # Don't raise - fall through to ChromaDB fallback
+            USE_QDRANT = False
+            qdrant_client = None
+        else:
+            # Only initialize if import succeeded
+            qdrant_client = QdrantKnowledgeBase(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+            collection = qdrant_client  # Compatible interface
+            logger.info("✅ Qdrant Cloud initialized successfully")
     except (KeyError, ImportError, AttributeError, Exception) as e:
         logger.warning(f"Failed to initialize Qdrant: {e}")
         import traceback
