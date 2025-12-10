@@ -132,7 +132,7 @@ class PrimAgent:
                 seen.add(q.lower())
                 unique_expanded.append(q)
         
-        return unique_expanded[:5]  # Limit to 5 variations
+        return unique_expanded[:8]  # Limit to 8 variations (increased for better coverage)
     
     def _search_kb(self, query):
         print(f"DEBUG: Searching KB for '{query}'")
