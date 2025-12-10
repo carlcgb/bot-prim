@@ -66,7 +66,11 @@ def load_qdrant_config():
 qdrant_enabled, qdrant_url = load_qdrant_config()
 
 # Now import after Qdrant env vars are set
-from agent import PrimAgent
+# Import agent with warnings suppressed
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', category=RuntimeWarning)
+    warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
+    from agent import PrimAgent
 from knowledge_base import collection
 
 # Configuration file path
