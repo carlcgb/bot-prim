@@ -273,7 +273,7 @@ st.markdown("""
 </script>
 """, unsafe_allow_html=True)
 
-st.title("🦸‍♂️🤖 DEBUGEX")
+st.title("🦸‍♂️ DEBUGEX")
 
 # Auto-initialize knowledge base if empty (only once per session)
 if "kb_initialized" not in st.session_state:
