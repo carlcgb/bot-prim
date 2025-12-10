@@ -42,13 +42,13 @@ class PrimAgent:
                     ),
                         genai.protos.FunctionDeclaration(
                             name="search_internet",
-                            description="Search the internet ONLY for general technical issues NOT related to PrimLogix (e.g., general Windows errors, network troubleshooting, general software installation). DO NOT use this for PrimLogix-specific questions - always use search_knowledge_base first for PrimLogix questions.",
+                            description="Search the internet for technical information to COMPLEMENT PrimLogix documentation. Use this for: SMTP/IMAP/POP port numbers, server addresses, email provider configurations (Outlook, Gmail, etc.), general technical standards, network troubleshooting, or any technical details that might not be in the PrimLogix documentation. ALWAYS use search_knowledge_base FIRST for PrimLogix-specific steps and procedures, then use search_internet to find missing technical details (ports, servers, configuration values).",
                         parameters=genai.protos.Schema(
                             type=genai.protos.Type.OBJECT,
                             properties={
                                 "query": genai.protos.Schema(
                                     type=genai.protos.Type.STRING,
-                                    description="Technical search query with error codes, technology names, or specific technical problem description."
+                                    description="Technical search query for specific information needed: port numbers, server addresses, email provider settings, technical standards, or configuration values. Examples: 'SMTP port Outlook 365', 'Gmail IMAP settings', 'POP3 port number'."
                                 )
                             },
                             required=["query"]
@@ -65,96 +65,287 @@ class PrimAgent:
         }
 
 
+    def _expand_query(self, query):
+        """Expand query with synonyms and variations for better understanding."""
+        query_lower = query.lower()
+        expanded = [query]  # Always include original
+        
+        # Common PrimLogix terms and synonyms
+        synonyms = {
+            'edit': ['modifier', 'changer', 'éditer', 'configurer'],
+            'create': ['créer', 'ajouter', 'nouveau'],
+            'delete': ['supprimer', 'retirer', 'enlever'],
+            'configure': ['configurer', 'paramétrer', 'configuration'],
+            'protocol': ['protocole'],
+            'email': ['courriel', 'courrier', 'e-mail'],
+            'smtp': ['smtp', 'envoi'],
+            'imap': ['imap', 'réception'],
+            'pop': ['pop', 'pop3'],
+            'user': ['utilisateur', 'usager'],
+            'password': ['mot de passe', 'mdp'],
+            'profile': ['profil'],
+            'settings': ['paramètres', 'configuration'],
+            'menu': ['menu', 'navigation'],
+            'where': ['où', 'comment accéder', 'comment aller'],
+            'how': ['comment', 'procédure', 'étapes']
+        }
+        
+        # Add PrimLogix context if not present
+        if 'primlogix' not in query_lower:
+            expanded.append(query + " PrimLogix")
+        
+        # Add lowercase version
+        if query != query.lower():
+            expanded.append(query.lower())
+        
+        # Add variations with common synonyms
+        for key, values in synonyms.items():
+            if key in query_lower:
+                for synonym in values:
+                    if synonym not in query_lower:
+                        expanded.append(query.replace(key, synonym))
+        
+        # Configuration/config variations
+        if "configuration" in query_lower:
+            expanded.append(query.replace("configuration", "config"))
+        elif "config" in query_lower and "configuration" not in query_lower:
+            expanded.append(query.replace("config", "configuration"))
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_expanded = []
+        for q in expanded:
+            if q.lower() not in seen:
+                seen.add(q.lower())
+                unique_expanded.append(q)
+        
+        return unique_expanded[:5]  # Limit to 5 variations
+    
     def _search_kb(self, query):
         print(f"DEBUG: Searching KB for '{query}'")
         try:
-            # Search with optimized results for speed and quality
-            results = query_knowledge_base(query, n_results=10)
-            if not results or not results.get('documents') or not results['documents'][0]:
-                # Try alternative search queries if initial search fails
-                print(f"DEBUG: Initial search failed, trying alternative queries...")
-                alternative_queries = [
-                    query.lower(),
-                    query.replace("configuration", "config"),
-                    query.replace("config", "configuration"),
-                    query + " PrimLogix",
-                    "PrimLogix " + query
-                ]
-                
-                for alt_query in alternative_queries:
-                    if alt_query == query:
-                        continue
-                    alt_results = query_knowledge_base(alt_query, n_results=6)
-                    if alt_results and alt_results.get('documents') and alt_results['documents'][0]:
-                        print(f"DEBUG: Found results with alternative query: '{alt_query}'")
-                        results = alt_results
-                        break
-                
-                if not results or not results.get('documents') or not results['documents'][0]:
-                    return f"No relevant documentation found for '{query}'. Consider trying different search terms or checking if the information exists in the knowledge base."
+            # Expand query for better understanding
+            search_queries = self._expand_query(query)
+            print(f"DEBUG: Expanded queries: {search_queries[:3]}...")  # Log first 3
             
-            docs = results['documents'][0]
-            metadatas = results['metadatas'][0]
-            distances = results.get('distances', [None])[0] if results.get('distances') else [None] * len(docs)
+            # Search with more results initially to filter later
+            all_results = []
             
-            # Include all results, even lower relevance ones, for comprehensive coverage
-            context = f"📚 Technical Documentation Search Results for: '{query}'\n"
-            context += f"Found {len(docs)} relevant document(s)\n\n"
-            
-            seen_docs = set()  # Avoid duplicates
-            for i, doc in enumerate(docs):
-                if not doc or not doc.strip():
+            # Collect results from multiple queries (reduced to 2 for speed)
+            seen_ids = set()
+            for search_query in search_queries[:2]:  # Limit to 2 queries for better speed
+                try:
+                    query_results = query_knowledge_base(search_query, n_results=8)  # Reduced for speed
+                    if query_results and query_results.get('documents') and query_results['documents'][0]:
+                        docs = query_results['documents'][0]
+                        metadatas = query_results['metadatas'][0]
+                        distances = query_results.get('distances', [None])[0] if query_results.get('distances') else [None] * len(docs)
+                        
+                        for i, doc in enumerate(docs):
+                            if not doc or not doc.strip():
+                                continue
+                            
+                            # Calculate relevance score
+                            distance = distances[i] if i < len(distances) and distances[i] is not None else 1.0
+                            score = max(0, min(100, int((1 - distance) * 100)))
+                            
+                            # Create unique ID from URL + chunk
+                            source = metadatas[i].get('url', '') if i < len(metadatas) else ''
+                            chunk_idx = metadatas[i].get('chunk_index', i) if i < len(metadatas) else i
+                            doc_id = f"{source}_{chunk_idx}"
+                            
+                            # Skip duplicates
+                            if doc_id in seen_ids:
+                                continue
+                            seen_ids.add(doc_id)
+                            
+                            # Extract images from metadata
+                            images = []
+                            metadata_obj = metadatas[i] if i < len(metadatas) else {}
+                            if metadata_obj:
+                                images_json = metadata_obj.get('images', '')
+                                if images_json:
+                                    try:
+                                        import json
+                                        images = json.loads(images_json) if isinstance(images_json, str) else images_json
+                                    except (json.JSONDecodeError, TypeError):
+                                        images = []
+                            
+                            all_results.append({
+                                'doc': doc,
+                                'metadata': metadata_obj,
+                                'score': score,
+                                'distance': distance,
+                                'images': images  # Store images with result
+                            })
+                except Exception as e:
+                    print(f"DEBUG: Error with query '{search_query}': {e}")
                     continue
+            
+            if not all_results:
+                return f"Aucune documentation pertinente trouvée pour '{query}'. Essayez avec des termes différents ou vérifiez si l'information existe dans la base de connaissances."
+            
+            # Sort by relevance score (highest first)
+            all_results.sort(key=lambda x: x['score'], reverse=True)
+            
+            # Filter by minimum relevance threshold (40%)
+            filtered_results = [r for r in all_results if r['score'] >= 40]
+            
+            # If we have good results (score >= 50%), prioritize them
+            high_relevance = [r for r in filtered_results if r['score'] >= 50]
+            if len(high_relevance) >= 3:
+                filtered_results = high_relevance[:7]  # Top 7 high-relevance results
+            else:
+                # Mix of high and medium relevance, but limit total
+                filtered_results = filtered_results[:7]  # Top 7 results
+            
+            if not filtered_results:
+                # If no results above 40%, use top 3 even if lower
+                filtered_results = all_results[:3]
+            
+            # Build context with filtered and sorted results
+            context = f"📚 Résultats de recherche dans la documentation PrimLogix pour: '{query}'\n"
+            context += f"Trouvé {len(filtered_results)} document(s) pertinent(s) (filtrés par pertinence ≥40%)\n\n"
+            context += "**⚠️ IMPORTANT : Utilise UNIQUEMENT les informations des documents ci-dessous. Les documents sont triés par pertinence (score le plus élevé en premier). Privilégie les documents avec score 🟢 (≥70%) ou 🟡 (≥50%).**\n\n"
+            
+            seen_docs = set()  # Avoid exact duplicate content
+            all_images = []  # Collect all relevant images
+            
+            for idx, result in enumerate(filtered_results, 1):
+                doc = result['doc']
+                metadata = result['metadata']
+                score = result['score']
+                images = result.get('images', [])
                 
-                # Skip exact duplicates
-                doc_hash = hash(doc[:100])  # Use first 100 chars as hash
+                # Skip exact duplicate content
+                doc_hash = hash(doc[:200])  # Use first 200 chars for better duplicate detection
                 if doc_hash in seen_docs:
                     continue
                 seen_docs.add(doc_hash)
                 
-                source = metadatas[i].get('url', 'URL unknown') if i < len(metadatas) else 'URL unknown'
-                title = metadatas[i].get('title', 'Untitled') if i < len(metadatas) else 'Untitled'
-                chunk_idx = metadatas[i].get('chunk_index', '?') if i < len(metadatas) else '?'
+                source = metadata.get('url', 'URL unknown')
+                title = metadata.get('title', 'Untitled')
+                chunk_idx = metadata.get('chunk_index', '?')
                 
-                # Calculate relevance score
-                relevance_score = ""
-                if distances and i < len(distances) and distances[i] is not None:
-                    score = max(0, min(100, int((1 - distances[i]) * 100)))
-                    if score >= 70:
-                        relevance_score = f" [🟢 {score}%]"
-                    elif score >= 50:
-                        relevance_score = f" [🟡 {score}%]"
-                    elif score >= 30:
-                        relevance_score = f" [🟠 {score}%]"
-                    else:
-                        relevance_score = f" [⚪ {score}%]"
+                # Debug: log if images are found (after title is defined)
+                if images:
+                    print(f"DEBUG: Found {len(images)} image(s) for document '{title[:50]}...'")
+                else:
+                    print(f"DEBUG: No images found for document '{title[:50]}...'")
                 
-                # Optimized content length for speed (reduced from 8000 to 5000)
-                doc_content = doc[:5000] if len(doc) > 5000 else doc
-                if len(doc) > 5000:
-                    doc_content += "\n[... truncated ...]"
+                # Relevance score indicator
+                if score >= 70:
+                    relevance_score = f" [🟢 {score}% - TRÈS PERTINENT]"
+                elif score >= 50:
+                    relevance_score = f" [🟡 {score}% - PERTINENT]"
+                elif score >= 40:
+                    relevance_score = f" [🟠 {score}% - MODÉRÉMENT PERTINENT]"
+                else:
+                    relevance_score = f" [⚪ {score}%]"
                 
-                context += f"### Document #{len(seen_docs)}: {title}{relevance_score}\n"
+                # Optimized content length - more for high relevance
+                max_length = 6000 if score >= 70 else 4000 if score >= 50 else 3000
+                doc_content = doc[:max_length] if len(doc) > max_length else doc
+                if len(doc) > max_length:
+                    doc_content += "\n[... contenu tronqué ...]"
+                
+                context += f"### Document #{idx}: {title}{relevance_score}\n"
                 context += f"**URL:** {source}\n"
                 context += f"**Chunk:** {chunk_idx}\n"
-                context += f"**Technical Content:**\n{doc_content}\n"
+                context += f"**⚠️ IMPORTANT:** Si tu utilises les informations de ce document dans ta réponse, TU DOIS inclure cette URL exacte ({source}) dans la section documentation de ta réponse, et l'associer au contenu spécifique de ce document que tu utilises.\n"
+                
+                # Add images if available - be less strict, include images from aide.primlogix.com
+                if images:
+                    print(f"DEBUG: Processing {len(images)} image(s) for document '{title[:50]}...'")
+                    # Filter images - only exclude obvious small icons, include most images from aide en ligne
+                    relevant_images = []
+                    for img in images:
+                        img_url = img.get('url', '') if isinstance(img, dict) else str(img)
+                        img_alt = img.get('alt', '') if isinstance(img, dict) else ''
+                        img_context = img.get('context', '') if isinstance(img, dict) else ''
+                        
+                        # Only include images from aide.primlogix.com (the official help site)
+                        if img_url and 'aide.primlogix.com' in img_url:
+                            # Only exclude very obvious small square icons (not screenshots)
+                            # Be less strict - only exclude if it's clearly a tiny icon
+                            img_lower = (img_url + ' ' + img_alt + ' ' + img_context).lower()
+                            
+                            # Only exclude if it's clearly a small icon (very strict criteria)
+                            # Check for very small square icons (16x16, 32x32, etc.) in filename
+                            is_small_icon = False
+                            small_icon_sizes = ['16x16', '20x20', '24x24', '32x32', '40x40', '48x48', '63x63', '64x64']
+                            if any(size in img_url.lower() for size in small_icon_sizes):
+                                # But allow if it's in an images/ folder (likely a screenshot)
+                                if '/images/' not in img_url.lower() and '/img/' not in img_url.lower():
+                                    is_small_icon = True
+                            
+                            # Only exclude obvious favicon/icon files
+                            is_favicon = any(x in img_url.lower() for x in ['favicon', '.ico', 'icon.'])
+                            
+                            # Include the image if it's not a small icon or favicon
+                            if not is_small_icon and not is_favicon:
+                                relevant_images.append({
+                                    'url': img_url,
+                                    'alt': img_alt or 'Capture d\'écran PrimLogix',
+                                    'context': img_context
+                                })
+                    
+                    # Add images to context (limit to 5 per document for more coverage)
+                    if relevant_images:
+                        print(f"DEBUG: Adding {len(relevant_images)} relevant image(s) to context for document '{title[:50]}...'")
+                        context += f"\n**📸 Images de l'aide en ligne PrimLogix (⚠️ TU DOIS INCLURE CES IMAGES DANS TA RÉPONSE - NE DIS JAMAIS QUE TU NE PEUX PAS AFFICHER D'IMAGES) :**\n"
+                        for img_idx, img in enumerate(relevant_images[:5], 1):  # Max 5 images per document
+                            img_url = img['url']
+                            img_alt = img.get('alt', 'Capture d\'écran PrimLogix')
+                            img_context = img.get('context', '')
+                            
+                            # Add image markdown with clear instruction
+                            context += f"**Image {img_idx}:** ![{img_alt}]({img_url})\n"
+                            if img_context:
+                                context += f"*Contexte: {img_context[:150]}...*\n"
+                            context += f"*⚠️ IMPORTANT: Tu DOIS inclure cette image dans ta réponse avec le format markdown exact: `![{img_alt}]({img_url})`*\n\n"
+                            
+                            # Also collect for final images section
+                            all_images.append({
+                                'url': img_url,
+                                'alt': img_alt,
+                                'context': img_context,
+                                'title': title,
+                                'score': score
+                            })
+                        context += "\n"
+                
+                context += f"**Contenu technique:**\n{doc_content}\n"
                 context += "---\n\n"
             
-            # Add direct links section
-            context += "**🔗 Direct Documentation Links:**\n"
+            # Add direct links section (simplified for speed)
+            context += "\n**🔗 URLs des documents (utilise les URLs des documents que tu utilises):**\n"
             seen_urls = set()
-            for i, doc in enumerate(docs):
-                if i < len(metadatas):
-                    source = metadatas[i].get('url', '')
-                    title = metadatas[i].get('title', 'Untitled')
-                    if source and source not in seen_urls:
-                        seen_urls.add(source)
-                        context += f"- [{title}]({source})\n"
+            for result in filtered_results[:3]:  # Top 3 URLs only for speed
+                metadata = result['metadata']
+                source = metadata.get('url', '')
+                title = metadata.get('title', 'Untitled')
+                if source and source not in seen_urls:
+                    seen_urls.add(source)
+                    context += f"- [{title}]({source})\n"
+            
+            # Add images section at the end (top 5 most relevant images)
+            if all_images:
+                # Sort by relevance score and get top 5
+                all_images.sort(key=lambda x: x.get('score', 0), reverse=True)
+                top_images = all_images[:5]
+                
+                context += "\n**📸 Images pertinentes de l'aide en ligne PrimLogix:**\n"
+                for img in top_images:
+                    context += f"![{img['alt']}]({img['url']})\n"
+                    if img.get('context'):
+                        context += f"*{img['context'][:150]}...*\n"
+                    context += f"*Source: {img['title']}*\n\n"
             
             return context
         except Exception as e:
             logger.error(f"Error searching KB: {e}", exc_info=True)
-            return f"Error searching KB: {e}"
+            return f"Erreur lors de la recherche dans la base de connaissances: {e}"
 
     def _search_web(self, query):
         print(f"DEBUG: Searching Web for '{query}'")
@@ -301,6 +492,12 @@ LANGUAGE:
 - **Utilise search_knowledge_base EN PREMIER** - cherche toujours dans la documentation PrimLogix avant tout
 - **Si la base de connaissances n'a pas l'info** : dis clairement que l'information n'est pas disponible dans la documentation PrimLogix, mais NE donne PAS de réponses génériques
 - **Les étapes doivent mentionner les menus, boutons, champs EXACTS de PrimLogix** : ex: "Menu Administration > Paramètres > Configuration E-mail" (pas juste "allez dans les paramètres")
+- **NAVIGATION CLAIRE ET DÉTAILLÉE** : Pour chaque action, indique EXACTEMENT où aller dans PrimLogix :
+  - Commence toujours par le menu principal (ex: "Menu Administration", "Menu Session", "Menu Utilisateurs")
+  - Ensuite, indique le sous-menu ou la section (ex: "> Paramètres", "> Configuration")
+  - Puis, le nom exact du bouton ou de l'option à cliquer (ex: "> Configuration E-mail", "> Protocoles de courriel")
+  - Format : "Dans PrimLogix, allez dans **[Menu Principal] > [Sous-menu] > [Option/Bouton]**"
+  - Exemple complet : "Dans PrimLogix, allez dans **Administration > Paramètres > Configuration E-mail > Protocoles de courriel**"
 
 ⚠️ RÈGLE ABSOLUE - NUMÉROTATION DES ÉTAPES (À RESPECTER IMPÉRATIVEMENT) :
 - **TU DOIS TOUJOURS COMMENCER PAR "### Étape 1:"** - C'EST OBLIGATOIRE, JAMAIS DE SAUT
@@ -311,8 +508,9 @@ LANGUAGE:
 
 TON RÔLE :
 - **Réponses COMPACTES mais COMPLÈTES** - toutes les infos nécessaires, format concis
-- **Spécifique PrimLogix** - chemins exacts (ex: "Administration > Paramètres > Configuration E-mail")
-- **Étapes claires** - chaque étape doit être actionnable, format compact
+- **Spécifique PrimLogix** - chemins exacts et complets (ex: "Administration > Paramètres > Configuration E-mail > Protocoles de courriel")
+- **NAVIGATION DÉTAILLÉE** - chaque étape doit indiquer EXACTEMENT où aller dans PrimLogix avec le chemin complet du menu
+- **Étapes claires et actionnables** - chaque étape doit être suffisamment détaillée pour que l'utilisateur sache exactement où cliquer
 - **Toujours répondre** - même pour questions similaires, fournis une réponse complète
 - **Liens vers documentation** - inclus toujours les URLs pertinentes
 
@@ -320,56 +518,84 @@ FORMAT DE RÉPONSE COMPACT :
 1. **Introduction brève** : "Je vais vous guider pour [action] dans PrimLogix."
 2. **Étapes numérotées compactes** :
    - Format : `### Étape 1: [Titre]`
-   - Contenu : Chemin PrimLogix exact + action + résultat attendu (en 1-2 phrases)
-   - Exemple : "### Étape 1: Accéder aux paramètres SMTP\nDans PrimLogix, allez dans **Administration > Paramètres > Configuration E-mail**. Cliquez sur **Paramètres SMTP**."
+   - Contenu : **CHEMIN DE NAVIGATION COMPLET** + action + résultat attendu
+   - **CHEMIN DE NAVIGATION OBLIGATOIRE** : Pour chaque étape qui nécessite de naviguer, indique TOUJOURS le chemin complet :
+     * Format : "Dans PrimLogix, allez dans **[Menu Principal] > [Sous-menu] > [Option/Bouton]**"
+     * Exemple : "Dans PrimLogix, allez dans **Administration > Paramètres > Configuration E-mail > Protocoles de courriel**"
+     * Si plusieurs clics sont nécessaires, décompose en sous-étapes : "1. Allez dans **Menu X > Sous-menu Y**. 2. Cliquez sur **Bouton Z**."
+   - **Si une capture d'écran est disponible** : INCLUS-LA dans l'étape correspondante avec `![description](url)`
+   - Exemple complet : "### Étape 1: Accéder aux protocoles SMTP\nDans PrimLogix, allez dans **Administration > Paramètres > Configuration E-mail**. Dans la fenêtre qui s'ouvre, cliquez sur l'onglet **Protocoles de courriel** ou le bouton **Gérer les protocoles**.\n![Capture d'écran montrant le menu Administration](url_image)"
 3. **Détails essentiels** : Noms de champs exacts, valeurs à entrer, boutons à cliquer
-4. **Liens documentation** : Section "🔗 Documentation" avec URLs pertinentes
+4. **Images contextuelles** : Si des screenshots sont fournis, utilise-les pour illustrer les étapes
+5. **Liens documentation** : Section "🔗 Documentation" avec URLs pertinentes
 
 EXEMPLE DE RÉPONSE COMPACTE :
 ```
-## Configuration SMTP dans PrimLogix
+## Édition des protocoles SMTP dans PrimLogix
 
-Je vais vous guider pour configurer votre courriel SMTP avec Outlook dans PrimLogix.
+Je vais vous guider pour éditer les protocoles SMTP dans PrimLogix.
 
-### Étape 1: Accéder aux paramètres SMTP
-Dans PrimLogix, allez dans **Administration > Paramètres > Configuration E-mail**. Cliquez sur **Paramètres SMTP**.
+### Étape 1: Accéder aux protocoles de courriel
+Dans PrimLogix, allez dans **Administration > Paramètres > Configuration E-mail**. Dans la fenêtre qui s'ouvre, cliquez sur l'onglet **Protocoles de courriel** ou le bouton **Gérer les protocoles**.
 
-### Étape 2: Remplir les champs SMTP
-Dans la section **Paramètres SMTP** :
-- **Serveur SMTP** : Entrez `smtp.office365.com`
-- **Port** : Entrez `587`
-- **Chiffrement** : Sélectionnez **TLS**
-- **Nom d'utilisateur** : Votre adresse email Outlook
-- **Mot de passe** : Votre mot de passe d'application (pas votre mot de passe normal)
+### Étape 2: Sélectionner ou créer un protocole SMTP
+Dans la liste des protocoles, sélectionnez le protocole SMTP existant que vous souhaitez modifier, ou cliquez sur **Nouveau protocole** pour en créer un. Choisissez **SMTP** comme type de protocole.
 
-### Étape 3: Enregistrer
-Cliquez sur **Enregistrer** en bas de la fenêtre. Un message de confirmation devrait apparaître.
+### Étape 3: Modifier les paramètres SMTP
+Dans le formulaire de configuration du protocole, modifiez les champs suivants :
+- **Nom du protocole** : Nom descriptif (ex: "SMTP Outlook")
+- **Serveur SMTP** : Entrez `smtp.office365.com` (pour Outlook) ou l'adresse de votre serveur
+- **Port** : Entrez `587` (ou `465` pour SSL)
+- **Chiffrement** : Sélectionnez **TLS** (ou **SSL** si port 465)
+- **Nom d'utilisateur** : Votre adresse email complète
+- **Mot de passe** : Votre mot de passe d'application
+
+### Étape 4: Enregistrer le protocole
+Cliquez sur **Enregistrer** ou **OK** en bas de la fenêtre. Un message de confirmation devrait apparaître.
 
 ## 🔗 Documentation
 - [Configuration E-mail](URL) - Guide complet
 ```
 
-UTILISATION DES OUTILS :
-- **TOUJOURS utiliser search_knowledge_base EN PREMIER** pour questions PrimLogix
-- **Une recherche suffit généralement** - seulement si vraiment nécessaire, essaie une variante
-- **Analyse les résultats** et combine les infos pour une réponse complète
-- **INCLUS TOUJOURS les liens** vers la documentation PrimLogix
-- Si info non trouvée : dis-le clairement, ne donne PAS de réponses génériques
+UTILISATION DES OUTILS - CRITIQUE POUR PERTINENCE :
+- **TOUJOURS utiliser search_knowledge_base EN PREMIER** pour questions PrimLogix - cela te donne les étapes spécifiques à PrimLogix
+- **Les résultats sont TRIÉS par pertinence** - utilise d'abord les documents avec score 🟢 (≥70%) ou 🟡 (≥50%)
+- **PRIVILÉGIE les documents les plus pertinents** - les premiers résultats sont les plus pertinents à la question
+- **Ne base PAS ta réponse sur des documents avec score ⚪ (<40%)** - ils ne sont pas pertinents
+- **Combine les informations des documents pertinents** pour une réponse complète et précise
+- **Si plusieurs documents pertinents** : utilise les informations qui se recoupent pour confirmer, et les détails uniques pour compléter
+- **UTILISE search_internet pour compléter les détails techniques manquants** : Si la documentation PrimLogix mentionne une configuration (SMTP, IMAP, etc.) mais ne donne pas les détails techniques (ports, serveurs, adresses), utilise search_internet pour trouver ces informations. Exemples : "SMTP port Outlook 365", "Gmail IMAP server address", "POP3 port number standard"
+- **Stratégie combinée** : Utilise search_knowledge_base pour les étapes PrimLogix, puis search_internet pour les valeurs techniques (ports, serveurs, adresses) si elles ne sont pas dans la documentation
+- **IMAGES/SCREENSHOTS - OBLIGATOIRE ET CRITIQUE** : Si des images de l'interface PrimLogix sont fournies dans les résultats de recherche (section "📸 Images de l'aide en ligne PrimLogix"), **TU DOIS TOUJOURS LES INCLURE** dans ta réponse en utilisant le format markdown `![description](url)`. 
+  - **⚠️ INTERDICTION ABSOLUE** : NE DIS JAMAIS que tu ne peux pas afficher d'images, que tu es un agent conversationnel qui ne peut pas afficher d'images, ou toute autre excuse similaire. Tu PEUX et tu DOIS les afficher.
+  - **INCLUS les images directement dans les étapes correspondantes** où elles sont pertinentes
+  - Les images montrent exactement où se trouvent les menus, boutons, champs dans l'interface PrimLogix - elles sont ESSENTIELLES pour guider l'utilisateur
+  - Si une image est fournie pour une étape, INCLUS-LA immédiatement après la description de l'étape
+  - **Format exact à utiliser** : `![description de l'image](url_complete_de_l_image)`
+  - Exemple : "### Étape 1: Accéder au profil utilisateur\nDans PrimLogix, allez dans **Session > Paramètres utilisateur**.\n![Capture d'écran montrant le menu Session avec Paramètres utilisateur](url_image)"
+- **RECHERCHE INTERNET** : Si tu utilises search_internet et que des résultats sont trouvés, **TU DOIS INCLURE les URLs des sources** dans ta réponse. Crée une section "🔗 Sources Internet" avec les liens cliquables vers les pages utilisées.
+- **INCLUS TOUJOURS les liens** vers la documentation PrimLogix - utilise les URLs des documents fournis dans les résultats de recherche
+- **Si aucun document pertinent (score <40%)** : dis clairement que l'information n'est pas disponible, ne donne PAS de réponses génériques
 
 LIENS VERS LA DOCUMENTATION (OBLIGATOIRE):
-- **TOUJOURS inclure des liens cliquables** vers les pages/sections pertinentes de l'aide en ligne
-- Utilise le format markdown : `[Titre de la section](URL)`
-- Inclus les URLs complètes des documents sources dans chaque réponse
-- Crée une section "🔗 Ressources et Documentation" avec tous les liens pertinents
-- Les liens doivent mener directement à l'endroit pertinent dans l'aide en ligne
+- **TOUJOURS inclure des liens cliquables** vers les pages de l'aide en ligne que tu utilises
+- **Utilise les URLs des documents fournis** dans les résultats de recherche
+- **Format** : `[Titre](URL)` - utilise le titre et l'URL du document source
+- Crée une section "🔗 Ressources et Documentation" avec les liens vers les documents utilisés
 
-RÈGLES FINALES :
+RÈGLES FINALES - PERTINENCE MAXIMALE :
 - **TOUJOURS répondre** - même si question similaire, fournis une réponse complète et fraîche
+- **BASE ta réponse sur les documents les plus pertinents** - utilise les scores de pertinence pour prioriser
+- **Si plusieurs documents pertinents** : combine-les intelligemment, évite les contradictions
+- **Si un document est très pertinent (🟢 ≥70%)** : utilise-le comme source principale
 - **Format COMPACT** - concis mais complet, évite répétition
-- **Spécifique PrimLogix** - chemins exacts, noms de champs exacts
+- **Spécifique PrimLogix** - chemins exacts, noms de champs exacts (tirés des documents pertinents)
 - **Étapes numérotées** : Commence par Étape 1, numérotation séquentielle
-- **Liens documentation** : Toujours inclure URLs pertinentes
-- **Français** sauf demande explicite en anglais"""
+- **IMAGES OBLIGATOIRES** : Si des images sont fournies dans les résultats (section "📸 Images de l'aide en ligne PrimLogix"), **TU DOIS LES INCLURE** dans ta réponse. Ne dis JAMAIS que tu ne peux pas afficher d'images - tu PEUX et tu DOIS les afficher avec `![description](url)`
+- **SOURCES INTERNET OBLIGATOIRES** : Si tu utilises search_internet, **TU DOIS INCLURE les URLs des sources** dans ta réponse finale. Crée une section "🔗 Sources Internet" avec tous les liens cliquables vers les pages que tu as utilisées.
+- **Liens documentation** : Toujours inclure URLs des documents les plus pertinents
+- **Français** sauf demande explicite en anglais
+- **Si aucun document pertinent** : dis-le clairement, ne devine pas"""
             
             model_auto = genai.GenerativeModel(
                 model_name=params_model_name,

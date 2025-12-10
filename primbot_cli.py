@@ -48,28 +48,19 @@ def cmd_config(args):
         os.environ['GEMINI_API_KEY'] = args.gemini_key
         print("✅ Clé API Gemini configurée")
     
-    if args.ollama_url:
-        config['ollama_url'] = args.ollama_url
-        print(f"✅ URL Ollama configurée: {args.ollama_url}")
-    
     if args.model:
         config['default_model'] = args.model
         print(f"✅ Modèle par défaut configuré: {args.model}")
     
-    if args.provider:
-        config['default_provider'] = args.provider
-        print(f"✅ Fournisseur par défaut configuré: {args.provider}")
-    
     if args.show:
         print("\n📋 Configuration actuelle:")
         print(f"  Gemini API Key: {'✅ Configurée' if config.get('gemini_api_key') else '❌ Non configurée'}")
-        print(f"  Ollama URL: {config.get('ollama_url', 'http://localhost:11434/v1')}")
         print(f"  Modèle par défaut: {config.get('default_model', 'gemini-2.5-flash')}")
-        print(f"  Fournisseur par défaut: {config.get('default_provider', 'gemini')}")
+        print(f"  Fournisseur: Gemini (obligatoire)")
         print(f"  Fichier de config: {CONFIG_FILE}")
         return
     
-    if not any([args.gemini_key, args.ollama_url, args.model, args.provider]):
+    if not any([args.gemini_key, args.model]):
         # Interactive configuration
         print("🔧 Configuration interactive de PRIMBOT\n")
         
@@ -85,32 +76,18 @@ def cmd_config(args):
         else:
             print("✅ Clé API Gemini déjà configurée\n")
         
-        # Ollama URL
-        current_ollama = config.get('ollama_url', 'http://localhost:11434/v1')
-        print(f"📝 Configuration d'Ollama (100% gratuit, local)")
-        print(f"   URL actuelle: {current_ollama}")
-        ollama_url = input("Entrez l'URL Ollama (ou appuyez sur Entrée pour garder la valeur actuelle): ").strip()
-        if ollama_url:
-            config['ollama_url'] = ollama_url
-            print("✅ URL Ollama configurée\n")
-        
         # Default model
         current_model = config.get('default_model', 'gemini-2.5-flash')
         print(f"📝 Modèle par défaut")
         print(f"   Modèle actuel: {current_model}")
-        model = input("Entrez le nom du modèle (ou appuyez sur Entrée pour garder): ").strip()
+        model = input("Entrez le nom du modèle Gemini (ou appuyez sur Entrée pour garder): ").strip()
         if model:
             config['default_model'] = model
             print("✅ Modèle par défaut configuré\n")
         
-        # Default provider
-        current_provider = config.get('default_provider', 'gemini')
-        print(f"📝 Fournisseur par défaut")
-        print(f"   Fournisseur actuel: {current_provider}")
-        provider = input("Entrez le fournisseur (gemini/local) (ou appuyez sur Entrée pour garder): ").strip()
-        if provider in ['gemini', 'local']:
-            config['default_provider'] = provider
-            print("✅ Fournisseur par défaut configuré\n")
+        # Provider is now fixed to Gemini
+        print(f"📝 Fournisseur: Gemini (obligatoire)")
+        print(f"   Gemini est maintenant le seul fournisseur supporté\n")
     
     save_config(config)
     print(f"\n💾 Configuration sauvegardée dans: {CONFIG_FILE}")
@@ -186,7 +163,7 @@ def cmd_ask(args):
     # Initialize agent
     try:
         agent = PrimAgent(
-            api_key=api_key or 'ollama',
+            api_key=api_key,
             base_url=base_url,
             model=model,
             provider=provider_name
@@ -262,7 +239,7 @@ Exemples:
   primbot ingest                    # Initialiser la base de connaissances
   primbot ask "comment changer mon mot de passe"
   primbot ask --interactive         # Mode interactif
-  primbot ask "question" --provider local --model llama3.1
+  primbot ask "question" --model gemini-2.5-flash
         """
     )
     
@@ -271,9 +248,7 @@ Exemples:
     # Config command
     config_parser = subparsers.add_parser('config', help='Configurer PRIMBOT')
     config_parser.add_argument('--gemini-key', help='Clé API Gemini')
-    config_parser.add_argument('--ollama-url', help='URL Ollama (défaut: http://localhost:11434/v1)')
-    config_parser.add_argument('--model', help='Modèle par défaut')
-    config_parser.add_argument('--provider', choices=['gemini', 'local'], help='Fournisseur par défaut')
+    config_parser.add_argument('--model', help='Modèle par défaut (Gemini)')
     config_parser.add_argument('--show', action='store_true', help='Afficher la configuration actuelle')
     
     # Ingest command
@@ -282,10 +257,8 @@ Exemples:
     # Ask command (main command)
     ask_parser = subparsers.add_parser('ask', help='Poser une question à PRIMBOT (commande par défaut)')
     ask_parser.add_argument('query', nargs='?', help='Question à poser')
-    ask_parser.add_argument('--provider', choices=['gemini', 'local'], help='Fournisseur AI (gemini/local)')
-    ask_parser.add_argument('--api-key', '--key', dest='api_key', help='Clé API (prioritaire sur config)')
-    ask_parser.add_argument('--model', help='Nom du modèle')
-    ask_parser.add_argument('--base-url', help='URL de base pour Ollama')
+    ask_parser.add_argument('--api-key', '--key', dest='api_key', help='Clé API Gemini (prioritaire sur config)')
+    ask_parser.add_argument('--model', help='Nom du modèle Gemini')
     ask_parser.add_argument('--interactive', '-i', action='store_true', help='Mode interactif')
     
     # Legacy support: if no command, treat as 'ask'
@@ -299,7 +272,6 @@ Exemples:
         ask_args.provider = None
         ask_args.api_key = None
         ask_args.model = None
-        ask_args.base_url = None
         ask_args.interactive = False
         
         # Parse remaining args
@@ -316,17 +288,11 @@ Exemples:
             # Parse other options
             i = 1
             while i < len(remaining):
-                if remaining[i] == '--provider' and i + 1 < len(remaining):
-                    ask_args.provider = remaining[i + 1]
-                    i += 2
-                elif remaining[i] in ['--key', '--api-key'] and i + 1 < len(remaining):
+                if remaining[i] in ['--key', '--api-key'] and i + 1 < len(remaining):
                     ask_args.api_key = remaining[i + 1]
                     i += 2
                 elif remaining[i] == '--model' and i + 1 < len(remaining):
                     ask_args.model = remaining[i + 1]
-                    i += 2
-                elif remaining[i] == '--base-url' and i + 1 < len(remaining):
-                    ask_args.base_url = remaining[i + 1]
                     i += 2
                 elif remaining[i] in ['--interactive', '-i']:
                     ask_args.interactive = True

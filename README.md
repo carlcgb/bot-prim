@@ -8,12 +8,15 @@ Assistant intelligent en support client pour la documentation PrimLogix avec Gem
 
 ## ✨ Fonctionnalités
 
-- 🔍 **Recherche intelligente** : 6 résultats optimisés avec scores de pertinence dans la documentation PrimLogix
-- 🔗 **Liens directs** : URLs vers les pages pertinentes de l'aide en ligne (sans images)
-- 🤖 **Support multi-IA** : Gemini (gratuit) et Ollama (100% gratuit, local)
+- 🔍 **Recherche intelligente optimisée** : Expansion automatique des requêtes avec synonymes, 8 résultats optimisés avec scores de pertinence
+- 🔗 **Liens précis** : URLs exactes vers les sections spécifiques de l'aide en ligne utilisées dans la réponse
+- 📸 **Images contextuelles** : Captures d'écran de l'interface PrimLogix avec modal plein écran au clic
+- 🌙 **Mode sombre** : Interface Streamlit en mode sombre par défaut
+- 🤖 **Gemini AI** : Support exclusif Gemini (gratuit, 60 req/min, 1500 req/jour)
 - 💻 **Multi-interface** : CLI et interface Web (Streamlit)
-- 🎯 **Réponses orientées support client** : Compactes, complètes, avec étapes cohérentes et logiquement liées
+- 🎯 **Réponses step-by-step détaillées** : Navigation complète avec chemins exacts (Menu > Sous-menu > Option)
 - 📝 **Format uniforme** : Toutes les étapes utilisent le même format, numérotées séquentiellement (Étape 1, 2, 3...)
+- 🌐 **Recherche internet complémentaire** : Utilisation automatique de DuckDuckGo pour compléter les détails techniques (ports SMTP, serveurs, etc.)
 - 👍👎 **Système de feedback** : Amélioration continue basée sur vos retours
 
 ## 🚀 Installation Rapide
@@ -113,10 +116,6 @@ primbot ask --interactive
    - Pas de carte de crédit requise
    - Clé automatiquement sauvegardée et pré-remplie
 
-2. **Ollama** (100% gratuit, local) - [Télécharger](https://ollama.ai/)
-   - Fonctionne sur votre machine
-   - Aucune clé API requise
-   - `ollama pull llama3.1` puis `ollama serve`
 
 ### Variables d'Environnement
 
@@ -142,17 +141,21 @@ GEMINI_API_KEY = "votre_cle_api"
 - 💬 **Commentaires détaillés** : Possibilité d'expliquer pourquoi une réponse n'était pas utile
 
 ### Performance Optimisée
-- ✅ **Recherche rapide** : 6 résultats optimisés (au lieu de 10) pour des réponses plus rapides
+- ✅ **Recherche rapide** : Expansion intelligente des requêtes avec synonymes, 8 résultats optimisés pour des réponses plus rapides
 - ✅ **Filtrage par pertinence** : Seulement les résultats avec score ≥40%
-- ✅ **Contexte limité** : Maximum 8000 caractères par document
+- ✅ **Contexte optimisé** : Maximum 6000 caractères pour documents très pertinents (≥70%), 4000 pour pertinents (≥50%), 3000 pour modérés
 - ✅ **Chunking optimisé** : 800 caractères pour une meilleure pertinence
+- ✅ **Recherches limitées** : 2 variations de requête au lieu de 3 pour une meilleure vitesse
 
 ### Réponses Orientées Support Client
 - 👋 **Accueil empathique** : Ton amical et professionnel
 - 📋 **Structure claire** : Étapes numérotées compactes mais complètes (format uniforme)
-- 🔗 **Liens directs** : Accès immédiat aux sections pertinentes de l'aide en ligne
+- 🗺️ **Navigation détaillée** : Chemins complets pour chaque action (ex: "Administration > Paramètres > Configuration E-mail > Protocoles de courriel")
+- 🔗 **Liens précis** : URLs exactes vers les sections spécifiques utilisées dans la réponse
+- 📸 **Images contextuelles** : Captures d'écran de l'interface PrimLogix avec modal plein écran
 - 🔢 **Cohérence** : Chaque étape suit logiquement la précédente, pas d'étapes isolées
 - ✅ **Vérification** : Demande si le problème est résolu
+- 🌐 **Compléments techniques** : Recherche internet automatique pour ports SMTP, serveurs, etc. si non disponibles dans la doc
 
 ## 💡 Conseils pour Obtenir les Meilleures Réponses
 
@@ -206,10 +209,11 @@ bot-prim/
 
 ## 🛠️ Technologies
 
-- **AI/ML**: Google Gemini API, Ollama (OpenAI-compatible)
+- **AI/ML**: Google Gemini API (exclusif)
 - **Vector DB**: ChromaDB (local) ou Qdrant Cloud (gratuit, 1GB)
 - **Embeddings**: Sentence Transformers
-- **Web**: Streamlit
+- **Web**: Streamlit (mode sombre)
+- **Internet Search**: DuckDuckGo Search (pour compléments techniques)
 - **Language**: Python 3.8+
 
 ## 📖 À Propos

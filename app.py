@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import re
 
 # Load Qdrant secrets from Streamlit FIRST (before importing knowledge_base)
 # This ensures Qdrant Cloud is used when secrets are available
@@ -7,15 +8,23 @@ try:
     if hasattr(st, 'secrets'):
         # Check if secrets file exists by trying to access it safely
         try:
-            if 'qdrant' in st.secrets:
-                os.environ['USE_QDRANT'] = str(st.secrets['qdrant'].get('USE_QDRANT', 'false'))
-                os.environ['QDRANT_URL'] = st.secrets['qdrant'].get('QDRANT_URL', '')
-                os.environ['QDRANT_API_KEY'] = st.secrets['qdrant'].get('QDRANT_API_KEY', '')
-                # Log for debugging (only in Streamlit Cloud)
-                if os.environ.get('USE_QDRANT', 'false').lower() == 'true':
-                    print(f"✅ Qdrant Cloud configured: URL={os.environ.get('QDRANT_URL', 'N/A')[:50]}...")
-        except Exception as e:
-            # Secrets file doesn't exist, use environment variables or .env file instead
+            # Use getattr to safely access secrets without KeyError
+            qdrant_secrets = getattr(st.secrets, 'qdrant', None)
+            if qdrant_secrets is not None:
+                # Access individual keys safely
+                use_qdrant = getattr(qdrant_secrets, 'USE_QDRANT', None) or getattr(qdrant_secrets, 'get', lambda k, d: d)('USE_QDRANT', 'false')
+                qdrant_url = getattr(qdrant_secrets, 'QDRANT_URL', None) or getattr(qdrant_secrets, 'get', lambda k, d: d)('QDRANT_URL', '')
+                qdrant_api_key = getattr(qdrant_secrets, 'QDRANT_API_KEY', None) or getattr(qdrant_secrets, 'get', lambda k, d: d)('QDRANT_API_KEY', '')
+                
+                if use_qdrant and qdrant_url and qdrant_api_key:
+                    os.environ['USE_QDRANT'] = str(use_qdrant)
+                    os.environ['QDRANT_URL'] = str(qdrant_url)
+                    os.environ['QDRANT_API_KEY'] = str(qdrant_api_key)
+                    # Log for debugging (only in Streamlit Cloud)
+                    if os.environ.get('USE_QDRANT', 'false').lower() == 'true':
+                        print(f"✅ Qdrant Cloud configured: URL={os.environ.get('QDRANT_URL', 'N/A')[:50]}...")
+        except (KeyError, AttributeError, TypeError) as e:
+            # Secrets file doesn't exist or has wrong structure, use environment variables instead
             print(f"⚠️ Could not load Qdrant secrets: {e}")
             pass
 except Exception as e:
@@ -31,6 +40,211 @@ import json
 from pathlib import Path
 
 st.set_page_config(page_title="PrimLogix Debug Agent", layout="wide")
+
+# Add CSS and JavaScript for image modal
+st.markdown("""
+<style>
+    .image-container {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+        margin: 10px 0;
+    }
+    .image-container img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .image-container img:hover {
+        opacity: 0.9;
+    }
+    .image-modal {
+        display: none;
+        position: fixed;
+        z-index: 99999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.95);
+        animation: fadeIn 0.3s;
+        overflow: auto;
+    }
+    .image-modal-content {
+        margin: auto;
+        display: block;
+        width: 90%;
+        max-width: 1200px;
+        max-height: 90vh;
+        object-fit: contain;
+        margin-top: 5vh;
+        animation: zoomIn 0.3s;
+    }
+    .image-modal-close {
+        position: absolute;
+        top: 20px;
+        right: 40px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 10001;
+    }
+    .image-modal-close:hover {
+        color: #fff;
+    }
+    .image-caption {
+        color: #f1f1f1;
+        text-align: center;
+        padding: 20px;
+        font-size: 16px;
+    }
+    @keyframes fadeIn {
+        from {opacity: 0;}
+        to {opacity: 1;}
+    }
+    @keyframes zoomIn {
+        from {transform: scale(0.5);}
+        to {transform: scale(1);}
+    }
+</style>
+<script>
+    // Make functions globally available
+    window.openImageModal = function(imgSrc, imgAlt) {
+        console.log('Opening modal with:', imgSrc);
+        var modal = document.getElementById('imageModal');
+        var modalImg = document.getElementById('modalImage');
+        var caption = document.getElementById('imageCaption');
+        if (modal && modalImg) {
+            modal.style.display = "block";
+            modalImg.src = imgSrc;
+            if (caption) {
+                caption.innerHTML = imgAlt || 'Image';
+            }
+            // Prevent body scroll when modal is open
+            document.body.style.overflow = "hidden";
+        } else {
+            console.error('Modal elements not found');
+        }
+    };
+    
+    window.closeImageModal = function() {
+        var modal = document.getElementById('imageModal');
+        if (modal) {
+            modal.style.display = "none";
+            document.body.style.overflow = "auto";
+        }
+    };
+    
+    // Use event delegation for click handlers (works better with React)
+    function initImageClickHandlers() {
+        // Remove old listeners to avoid duplicates
+        document.removeEventListener('click', handleImageClick);
+        document.addEventListener('click', handleImageClick, true);
+    }
+    
+    function handleImageClick(event) {
+        // Check if clicked element is an image container or image inside container
+        var target = event.target;
+        var container = target.closest('.image-container');
+        
+        if (container) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Get image URL from data attribute or img src
+            var imgUrl = container.getAttribute('data-image-url');
+            var imgAlt = container.getAttribute('data-image-alt') || 'Image';
+            
+            if (!imgUrl) {
+                var img = container.querySelector('img');
+                if (img) {
+                    imgUrl = img.src;
+                    imgAlt = img.alt || imgAlt;
+                }
+            }
+            
+            if (imgUrl) {
+                window.openImageModal(imgUrl, imgAlt);
+            }
+            return false;
+        }
+        
+        // Close modal when clicking outside
+        var modal = document.getElementById('imageModal');
+        if (modal && event.target === modal) {
+            window.closeImageModal();
+        }
+    }
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            var modal = document.getElementById('imageModal');
+            if (modal && modal.style.display === "block") {
+                window.closeImageModal();
+            }
+        }
+    });
+    
+    // Initialize on page load and after Streamlit updates
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initImageClickHandlers);
+    } else {
+        initImageClickHandlers();
+    }
+    
+    // Re-initialize after Streamlit updates (Streamlit uses MutationObserver)
+    var observer = new MutationObserver(function(mutations) {
+        initImageClickHandlers();
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+</script>
+""", unsafe_allow_html=True)
+
+# Add modal HTML structure
+st.markdown("""
+<div id="imageModal" class="image-modal">
+    <span class="image-modal-close" id="imageModalClose">&times;</span>
+    <img class="image-modal-content" id="modalImage">
+    <div class="image-caption" id="imageCaption"></div>
+</div>
+""", unsafe_allow_html=True)
+
+# Add click handler for close button using JavaScript
+st.markdown("""
+<script>
+    // Attach close button handler
+    function attachCloseButton() {
+        var closeBtn = document.getElementById('imageModalClose');
+        if (closeBtn && !closeBtn.hasAttribute('data-handler-attached')) {
+            closeBtn.addEventListener('click', function() {
+                window.closeImageModal();
+            });
+            closeBtn.setAttribute('data-handler-attached', 'true');
+        }
+    }
+    
+    // Initialize close button
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attachCloseButton);
+    } else {
+        attachCloseButton();
+    }
+    
+    // Re-attach after Streamlit updates
+    var closeObserver = new MutationObserver(function() {
+        attachCloseButton();
+    });
+    closeObserver.observe(document.body, { childList: true, subtree: true });
+</script>
+""", unsafe_allow_html=True)
 
 st.title("🤖 PrimLogix Debug Agent")
 
@@ -206,6 +420,31 @@ if True:  # Always Gemini
         help="gemini-2.5-flash: Fastest and free. gemini-2.5-pro: Most capable (may have rate limits on free tier)"
     )
 
+def convert_images_to_clickable(content):
+    """Convert markdown images to clickable HTML images with modal."""
+    # Find all markdown images: ![alt](url)
+    pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+    
+    def replace_image(match):
+        alt_text = match.group(1) or 'Image'
+        img_url = match.group(2)
+        
+        # Escape quotes in alt text for HTML attribute
+        escaped_alt = alt_text.replace('"', '&quot;').replace("'", '&#39;')
+        
+        # SVG placeholder for error handling (base64 encoded)
+        svg_placeholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBub24gZGlzcG9uaWJsZTwvdGV4dD48L3N2Zz4='
+        
+        # Return HTML with clickable image - NO onclick attribute (use event delegation instead)
+        # The JavaScript will handle clicks via event delegation
+        return (f'<div class="image-container" data-image-url="{img_url}" data-image-alt="{escaped_alt}" style="cursor: pointer;">'
+                f'<img src="{img_url}" alt="{alt_text}" style="max-width: 600px; cursor: pointer; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block; margin: 10px auto;" '
+                f'onerror="this.onerror=null; this.src=\'{svg_placeholder}\';" /></div>')
+    
+    # Replace all markdown images with clickable HTML
+    html_content = re.sub(pattern, replace_image, content)
+    return html_content
+
 # Initialize Chat History
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -216,18 +455,24 @@ for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             content = message["content"]
             
-            # Remove images and "Captures d'écran de l'interface" section from content
-            import re
-            # Remove markdown image syntax: ![alt](url)
-            content = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', content)
-            # Remove "Captures d'écran de l'interface" section header and content
-            content = re.sub(r'##\s*📸\s*Captures\s*d\'écran\s*de\s*l\'interface.*?(?=\n##|\n---|$)', '', content, flags=re.IGNORECASE | re.DOTALL)
-            # Remove image sections and references
-            content = re.sub(r'(?i)(image\s*\d+|capture\s*d\'écran\s*\d+|screenshot\s*\d+)[:：]?\s*[^\n]*\n?', '', content)
+            # Remove "Captures d'écran de l'interface" section header at the end (but keep images in steps)
+            content = re.sub(r'##\s*📸\s*Captures\s*d\'écran\s*pertinentes\s*de\s*l\'interface\s*PrimLogix.*?(?=\n##|\n---|$)', '', content, flags=re.IGNORECASE | re.DOTALL)
             # Clean up multiple empty lines
             content = re.sub(r'\n\s*\n\s*\n+', '\n\n', content)
-            # Display content (now without images, only URLs)
-            st.markdown(content)
+            
+            # Split content into parts: markdown text and images
+            # First, extract images and replace with placeholders
+            image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+            images_found = re.findall(image_pattern, content)
+            
+            if images_found:
+                # Convert images to clickable HTML
+                html_content = convert_images_to_clickable(content)
+                # Display with HTML support
+                st.markdown(html_content, unsafe_allow_html=True)
+            else:
+                # No images, just display markdown normally
+                st.markdown(content)
 
 # Chat Input
 if prompt := st.chat_input("Describe the problem..."):
@@ -268,19 +513,25 @@ if prompt := st.chat_input("Describe the problem..."):
             
             response = agent.run(st.session_state.messages.copy())
             
-            # Remove images and "Captures d'écran de l'interface" section from response
-            import re
-            # Remove markdown image syntax: ![alt](url)
-            response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
-            # Remove "Captures d'écran de l'interface" section header and content
-            response = re.sub(r'##\s*📸\s*Captures\s*d\'écran\s*de\s*l\'interface.*?(?=\n##|\n---|$)', '', response, flags=re.IGNORECASE | re.DOTALL)
-            # Remove image sections and references
-            response = re.sub(r'(?i)(image\s*\d+|capture\s*d\'écran\s*\d+|screenshot\s*\d+)[:：]?\s*[^\n]*\n?', '', response)
+            # Keep images but clean up other unwanted content
+            # Remove "Captures d'écran de l'interface" section header at the end (but keep images in steps)
+            response = re.sub(r'##\s*📸\s*Captures\s*d\'écran\s*pertinentes\s*de\s*l\'interface\s*PrimLogix.*?(?=\n##|\n---|$)', '', response, flags=re.IGNORECASE | re.DOTALL)
+            # Remove duplicate image sections at the end, but keep images within steps
             # Clean up multiple empty lines
             response = re.sub(r'\n\s*\n\s*\n+', '\n\n', response)
             
-            # Display response (now without images, only URLs)
-            message_placeholder.markdown(response)
+            # Check if response contains images
+            image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+            has_images = re.search(image_pattern, response)
+            
+            if has_images:
+                # Convert images to clickable HTML
+                html_response = convert_images_to_clickable(response)
+                # Display response with clickable images
+                message_placeholder.markdown(html_response, unsafe_allow_html=True)
+            else:
+                # No images, display normally
+                message_placeholder.markdown(response)
             
             st.session_state.messages.append({"role": "assistant", "content": response})
             
