@@ -297,56 +297,110 @@ class PrimAgent:
                 context += f"**Chunk:** {chunk_idx}\n"
                 context += f"**⚠️ IMPORTANT:** Si tu utilises les informations de ce document dans ta réponse, TU DOIS inclure cette URL exacte ({source}) dans la section documentation de ta réponse, et l'associer au contenu spécifique de ce document que tu utilises.\n"
                 
-                # Add images if available - be less strict, include images from aide.primlogix.com
+                # Add images if available - PRIORITIZE full interface screenshots over emojis/icons
                 if images:
-                    # Filter images - only exclude obvious small icons, include most images from aide en ligne
-                    relevant_images = []
+                    # Filter and score images - prioritize large rectangular screenshots
+                    scored_images = []
                     for img in images:
                         img_url = img.get('url', '') if isinstance(img, dict) else str(img)
                         img_alt = img.get('alt', '') if isinstance(img, dict) else ''
                         img_context = img.get('context', '') if isinstance(img, dict) else ''
+                        img_width = img.get('width') if isinstance(img, dict) else None
+                        img_height = img.get('height') if isinstance(img, dict) else None
                         
                         # Only include images from aide.primlogix.com (the official help site)
                         if img_url and 'aide.primlogix.com' in img_url:
-                            # Only exclude very obvious small square icons and warning/stop signs (not screenshots)
-                            # Be less strict - only exclude if it's clearly a tiny icon or warning sign
                             img_lower = (img_url + ' ' + img_alt + ' ' + img_context).lower()
                             
-                            # Exclude warning/stop sign icons
-                            warning_patterns = [
-                                'stop', 'stop-sign', 'stop-signal', 'arret', 'arrêt', 'warning',
-                                'avertissement', 'alert', 'alerte', 'danger', 'attention',
-                                'octagon', 'octogone', 'stop-icon', 'icone-arret', 'icone-stop',
-                                'panneau arret', 'panneau arrêt', 'panneau stop', 'panneau avertissement',
-                                'red stop', 'arret rouge', 'arrêt rouge', 'hand stop', 'main stop'
+                            # STRICT: Exclude emojis, icons, and small graphics
+                            emoji_icon_patterns = [
+                                'emoji', 'emoticon', 'smiley', 'smile', '😀', '😊', '👍', '👎',
+                                'icon', 'icone', 'icône', 'logo', 'button', 'bouton',
+                                'arrow', 'fleche', 'flèche', 'chevron', 'nav', 'menu',
+                                'stop', 'stop-sign', 'warning', 'avertissement', 'alert',
+                                'checkmark', 'check', 'tick', 'coche', 'verification',
+                                'person', 'user', 'utilisateur', 'silhouette', 'avatar',
+                                'document', 'folder', 'file', 'dossier', 'cv',
+                                'favicon', '.ico', 'svg', 'sprite', 'glyph'
                             ]
-                            if any(pattern in img_lower for pattern in warning_patterns):
-                                continue  # Skip warning/stop sign icons
+                            if any(pattern in img_lower for pattern in emoji_icon_patterns):
+                                # Only allow if explicitly marked as screenshot/interface
+                                if not any(x in img_lower for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog', 'images/']):
+                                    continue  # Skip emojis/icons
                             
-                            # Only exclude if it's clearly a small icon (very strict criteria)
-                            # Check for very small square icons (16x16, 32x32, etc.) in filename
+                            # Exclude small square icons
                             is_small_icon = False
-                            small_icon_sizes = ['16x16', '20x20', '24x24', '32x32', '40x40', '48x48', '63x63', '64x64']
+                            small_icon_sizes = ['16x16', '20x20', '24x24', '32x32', '40x40', '48x48', '50x50', '56x56', '60x60', '63x63', '64x64', '72x72', '80x80', '96x96', '100x100', '128x128']
                             if any(size in img_url.lower() for size in small_icon_sizes):
-                                # But allow if it's in an images/ folder (likely a screenshot)
                                 if '/images/' not in img_url.lower() and '/img/' not in img_url.lower():
-                                    is_small_icon = True
+                                    continue  # Skip small icons
                             
-                            # Only exclude obvious favicon/icon files
-                            is_favicon = any(x in img_url.lower() for x in ['favicon', '.ico', 'icon.'])
+                            # Calculate priority score (higher = better, prioritize full interface screenshots)
+                            priority_score = 0
                             
-                            # Include the image if it's not a small icon or favicon
-                            if not is_small_icon and not is_favicon:
-                                relevant_images.append({
+                            # HIGH PRIORITY: Large rectangular images (full interface screenshots)
+                            width_val = None
+                            height_val = None
+                            try:
+                                if img_width and isinstance(img_width, (int, str)):
+                                    width_val = int(img_width) if str(img_width).isdigit() else None
+                                if img_height and isinstance(img_height, (int, str)):
+                                    height_val = int(img_height) if str(img_height).isdigit() else None
+                            except (ValueError, TypeError):
+                                pass
+                            
+                            if width_val and height_val and width_val > 0 and height_val > 0:
+                                # Large images (likely full screenshots)
+                                if width_val >= 600 or height_val >= 400:
+                                    priority_score += 50
+                                elif width_val >= 400 or height_val >= 300:
+                                    priority_score += 30
+                                
+                                # Rectangular images (screenshots are usually rectangular, not square)
+                                ratio = max(width_val, height_val) / min(width_val, height_val)
+                                if ratio > 1.5:  # Significantly rectangular
+                                    priority_score += 20
+                                elif ratio > 1.2:  # Moderately rectangular
+                                    priority_score += 10
+                                elif ratio < 1.1:  # Square or near-square (likely icon)
+                                    priority_score -= 30  # Penalize square images
+                            
+                            # HIGH PRIORITY: Images in /images/ directory (where screenshots are stored)
+                            if '/images/' in img_url.lower():
+                                priority_score += 40
+                            
+                            # HIGH PRIORITY: Explicit screenshot keywords
+                            screenshot_keywords = ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog', 'application', 'logiciel']
+                            if any(keyword in img_lower for keyword in screenshot_keywords):
+                                priority_score += 30
+                            
+                            # MEDIUM PRIORITY: PNG/JPG/JPEG (not SVG/GIF which are often icons)
+                            if any(img_url.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp']):
+                                priority_score += 10
+                            
+                            # LOW PRIORITY: Small images or square images
+                            if width_val and height_val:
+                                if width_val < 200 or height_val < 200:
+                                    priority_score -= 20
+                            
+                            # Only include images with positive priority score (prioritize screenshots)
+                            if priority_score > 0:
+                                scored_images.append({
                                     'url': img_url,
                                     'alt': img_alt or 'Capture d\'écran PrimLogix',
-                                    'context': img_context
+                                    'context': img_context,
+                                    'score': priority_score,
+                                    'width': width_val,
+                                    'height': height_val
                                 })
                     
-                    # Add images to context (limit to 5 per document for more coverage)
-                    if relevant_images:
+                    # Sort by priority score (highest first) to prioritize full interface screenshots
+                    scored_images.sort(key=lambda x: x['score'], reverse=True)
+                    
+                    # Add images to context (limit to 5 per document, prioritizing highest scores)
+                    if scored_images:
                         context += f"\n**📸 Images de l'aide en ligne PrimLogix (⚠️ TU DOIS INCLURE CES IMAGES DANS TA RÉPONSE - NE DIS JAMAIS QUE TU NE PEUX PAS AFFICHER D'IMAGES) :**\n"
-                        for img_idx, img in enumerate(relevant_images[:5], 1):  # Max 5 images per document
+                        for img_idx, img in enumerate(scored_images[:5], 1):  # Top 5 highest priority images
                             img_url = img['url']
                             img_alt = img.get('alt', 'Capture d\'écran PrimLogix')
                             img_context = img.get('context', '')
