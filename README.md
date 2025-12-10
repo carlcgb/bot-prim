@@ -231,8 +231,9 @@ bot-prim/
 - 🎯 **Objectif** : Simplifier l'accès à la documentation PrimLogix avec un support client de qualité
 - 🆓 **100% gratuit** : Aucune carte de crédit, plan gratuit généreux
 - 📝 **Réponses optimisées** : Format compact, étapes cohérentes, liens directs vers la documentation
-- 💻 **Multi-plateforme** : CLI et interface web
+- 💻 **Multi-plateforme** : CLI et interface web (Streamlit)
 - 🔄 **Amélioration continue** : Système de feedback pour s'améliorer constamment
+- 🛡️ **Robuste** : Gestion d'erreurs avancée, fallback automatique, import sécurisé
 
 Développé par **Dev-NTIC** pour améliorer l'expérience utilisateur PrimLogix.
 
