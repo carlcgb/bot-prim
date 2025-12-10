@@ -8,14 +8,18 @@ os.environ['GRPC_VERBOSITY'] = 'ERROR'
 os.environ['GLOG_minloglevel'] = '2'
 os.environ['PYTHONWARNINGS'] = 'ignore'
 
-try:
-    from ddgs import DDGS
-except ImportError:
-    # Fallback for old package name
+# Import DDGS with warnings suppressed
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', category=RuntimeWarning)
+    warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
     try:
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
     except ImportError:
-        DDGS = None
+        # Fallback for old package name
+        try:
+            from duckduckgo_search import DDGS
+        except ImportError:
+            DDGS = None
 from knowledge_base import query_knowledge_base
 import json
 import logging
