@@ -14,6 +14,49 @@ import time
 from contextlib import contextmanager
 from io import StringIO
 from pathlib import Path
+
+# Load Qdrant configuration from environment or .env file BEFORE importing knowledge_base
+# This ensures Qdrant Cloud is used when configured
+def load_qdrant_config():
+    """Load Qdrant configuration from environment variables or .env file."""
+    # Check environment variables first
+    use_qdrant = os.getenv('USE_QDRANT', 'false').lower() == 'true'
+    qdrant_url = os.getenv('QDRANT_URL')
+    qdrant_api_key = os.getenv('QDRANT_API_KEY')
+    
+    # If not in environment, try to load from .env file
+    if not use_qdrant or not qdrant_url or not qdrant_api_key:
+        env_file = Path('.env')
+        if env_file.exists():
+            try:
+                with open(env_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key, value = line.split('=', 1)
+                            key = key.strip()
+                            value = value.strip().strip('"').strip("'")
+                            if key == 'USE_QDRANT':
+                                use_qdrant = value.lower() == 'true'
+                            elif key == 'QDRANT_URL':
+                                qdrant_url = value
+                            elif key == 'QDRANT_API_KEY':
+                                qdrant_api_key = value
+            except Exception as e:
+                print(f"⚠️ Could not load .env file: {e}", file=sys.stderr)
+    
+    # Set environment variables so knowledge_base can use them
+    if use_qdrant and qdrant_url and qdrant_api_key:
+        os.environ['USE_QDRANT'] = 'true'
+        os.environ['QDRANT_URL'] = qdrant_url
+        os.environ['QDRANT_API_KEY'] = qdrant_api_key
+        return True, qdrant_url
+    return False, None
+
+# Load Qdrant config before importing knowledge_base
+qdrant_enabled, qdrant_url = load_qdrant_config()
+
+# Now import after Qdrant env vars are set
 from agent import PrimAgent
 from knowledge_base import collection
 
@@ -160,6 +203,15 @@ def cmd_ingest(args):
     """Ingest knowledge base from PrimLogix documentation."""
     print("📥 Initialisation de la base de connaissances PrimLogix\n")
     
+    # Show which backend will be used
+    if qdrant_enabled:
+        print(f"☁️  Backend: Qdrant Cloud")
+        print(f"   URL: {qdrant_url[:50]}..." if qdrant_url else "   URL: N/A")
+        print("")
+    else:
+        print("💾 Backend: ChromaDB Local")
+        print("   (Pour utiliser Qdrant Cloud, configurez USE_QDRANT, QDRANT_URL et QDRANT_API_KEY)\n")
+    
     try:
         from scraper import run_scraper
         from knowledge_base import add_documents
@@ -170,10 +222,13 @@ def cmd_ingest(args):
         data = run_scraper()
         
         print(f"\n💾 Ajout de {len(data)} pages à la base de connaissances...")
+        if qdrant_enabled:
+            print("   (Envoi vers Qdrant Cloud...)\n")
         add_documents(data)
         
         final_count = collection.count()
-        print(f"\n✅ Base de connaissances initialisée avec {final_count} documents!")
+        backend_name = "Qdrant Cloud" if qdrant_enabled else "ChromaDB Local"
+        print(f"\n✅ Base de connaissances initialisée avec {final_count} documents dans {backend_name}!")
         print(f"📚 Prêt à répondre à vos questions sur PrimLogix!\n")
         
     except Exception as e:
