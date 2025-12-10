@@ -240,7 +240,7 @@ class PrimAgent:
             # Build context with filtered and sorted results
             context = f"📚 Résultats de recherche dans la documentation PrimLogix pour: '{query}'\n"
             context += f"Trouvé {len(filtered_results)} document(s) pertinent(s) (filtrés par pertinence ≥30%)\n\n"
-            context += "**⚠️ IMPORTANT : Utilise UNIQUEMENT les informations des documents ci-dessous. Les documents sont triés par pertinence (score le plus élevé en premier). Privilégie les documents avec score 🟢 (≥70%) ou 🟡 (≥50%), mais UTILISE AUSSI les documents avec score 🟠 (≥30%) - ils contiennent probablement l'information recherchée.**\n\n"
+            context += "**⚠️ IMPORTANT : Utilise UNIQUEMENT les informations des documents ci-dessous. Les documents sont triés par pertinence (score le plus élevé en premier). Privilégie les documents avec score 🟢 (≥70%) ou 🟡 (≥50%), mais UTILISE AUSSI les documents avec score 🟠 (≥25%) - ils contiennent probablement l'information recherchée.**\n\n"
             
             seen_docs = set()  # Avoid exact duplicate content
             all_images = []  # Collect all relevant images
