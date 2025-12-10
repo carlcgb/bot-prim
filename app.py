@@ -37,7 +37,12 @@ except Exception as e:
     pass
 
 # Now import knowledge_base (after Qdrant env vars are set)
-from agent import PrimAgent
+# Import agent with warnings suppressed (like in primbot_cli.py)
+import warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', category=RuntimeWarning)
+    warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
+    from agent import PrimAgent
 from knowledge_base import collection
 from storage_local import get_storage
 import json
