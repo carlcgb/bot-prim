@@ -73,7 +73,7 @@ class PrimAgent:
         # Common PrimLogix terms and synonyms
         synonyms = {
             'edit': ['modifier', 'changer', 'éditer', 'configurer'],
-            'create': ['créer', 'ajouter', 'nouveau'],
+            'create': ['créer', 'ajouter', 'nouveau', 'faire'],
             'delete': ['supprimer', 'retirer', 'enlever'],
             'configure': ['configurer', 'paramétrer', 'configuration'],
             'protocol': ['protocole'],
@@ -81,14 +81,27 @@ class PrimAgent:
             'smtp': ['smtp', 'envoi'],
             'imap': ['imap', 'réception'],
             'pop': ['pop', 'pop3'],
-            'user': ['utilisateur', 'usager'],
+            'user': ['utilisateur', 'usager', 'user'],
             'password': ['mot de passe', 'mdp'],
             'profile': ['profil'],
             'settings': ['paramètres', 'configuration'],
             'menu': ['menu', 'navigation'],
             'where': ['où', 'comment accéder', 'comment aller'],
-            'how': ['comment', 'procédure', 'étapes']
+            'how': ['comment', 'procédure', 'étapes', 'faire']
         }
+        
+        # Check for document IDs (like dlg103) in query
+        import re
+        doc_id_pattern = r'\bdlg\d+\b'
+        doc_ids = re.findall(doc_id_pattern, query_lower)
+        if doc_ids:
+            # Add document ID variations
+            for doc_id in doc_ids:
+                expanded.append(doc_id)  # Keep original format
+                expanded.append(doc_id.upper())  # Uppercase version
+                # Add with .html extension
+                expanded.append(f"{doc_id}.html")
+                expanded.append(f"{doc_id.upper()}.html")
         
         # Add PrimLogix context if not present
         if 'primlogix' not in query_lower:

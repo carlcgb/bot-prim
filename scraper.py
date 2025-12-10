@@ -27,6 +27,8 @@ def scrape_page(url):
     try:
         response = requests.get(url)
         response.raise_for_status()
+        # Ensure proper encoding
+        response.encoding = response.apparent_encoding or 'utf-8'
         soup = BeautifulSoup(response.text, 'html.parser')
         
         # Extract main content - adjusting selector based on common documentation structures
@@ -37,7 +39,11 @@ def scrape_page(url):
             # Convert HTML to Markdown for better readability for the LLM
             h = html2text.HTML2Text()
             h.ignore_links = False
+            h.unicode_snob = True  # Preserve Unicode characters
             text_content = h.handle(str(content_div))
+            # Ensure UTF-8 encoding
+            if isinstance(text_content, bytes):
+                text_content = text_content.decode('utf-8', errors='ignore')
             
             # Extract image URLs from the page with enhanced context
             images = []
@@ -331,6 +337,12 @@ def scrape_page(url):
                         })
             
             title = soup.title.string if soup.title else url
+            # Ensure title is properly encoded
+            if isinstance(title, bytes):
+                title = title.decode('utf-8', errors='ignore')
+            elif title:
+                title = str(title).encode('utf-8', errors='ignore').decode('utf-8')
+            
             pages_content.append({
                 "url": url,
                 "title": title,
