@@ -164,7 +164,7 @@ def cmd_ask(args):
     try:
         agent = PrimAgent(
             api_key=api_key,
-            base_url=base_url,
+            base_url=None,  # Gemini doesn't need base_url
             model=model,
             provider=provider_name
         )

@@ -48,17 +48,26 @@ st.markdown("""
         position: relative;
         display: inline-block;
         cursor: pointer;
-        margin: 10px 0;
+        margin: 15px 0;
+        text-align: center;
+        width: 100%;
     }
     .image-container img {
-        max-width: 100%;
+        max-width: 400px;
+        width: auto;
         height: auto;
+        max-height: 300px;
         border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        transition: transform 0.2s;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+        display: block;
+        margin: 0 auto;
+        object-fit: contain;
     }
     .image-container img:hover {
-        opacity: 0.9;
+        opacity: 0.85;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        transform: scale(1.02);
     }
     .image-modal {
         display: none;
@@ -75,12 +84,14 @@ st.markdown("""
     .image-modal-content {
         margin: auto;
         display: block;
-        width: 90%;
-        max-width: 1200px;
+        width: 95%;
+        max-width: 1400px;
         max-height: 90vh;
         object-fit: contain;
-        margin-top: 5vh;
+        margin-top: 2vh;
         animation: zoomIn 0.3s;
+        border-radius: 8px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
     .image-modal-close {
         position: absolute;
@@ -98,8 +109,20 @@ st.markdown("""
     .image-caption {
         color: #f1f1f1;
         text-align: center;
-        padding: 20px;
-        font-size: 16px;
+        padding: 15px 20px;
+        font-size: 14px;
+        max-width: 1400px;
+        margin: 0 auto;
+        line-height: 1.5;
+    }
+    /* Improve chat message readability */
+    .stChatMessage {
+        padding: 1rem;
+    }
+    /* Better spacing for content */
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
     @keyframes fadeIn {
         from {opacity: 0;}
@@ -437,8 +460,8 @@ def convert_images_to_clickable(content):
         
         # Return HTML with clickable image - NO onclick attribute (use event delegation instead)
         # The JavaScript will handle clicks via event delegation
-        return (f'<div class="image-container" data-image-url="{img_url}" data-image-alt="{escaped_alt}" style="cursor: pointer;">'
-                f'<img src="{img_url}" alt="{alt_text}" style="max-width: 600px; cursor: pointer; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block; margin: 10px auto;" '
+        return (f'<div class="image-container" data-image-url="{img_url}" data-image-alt="{escaped_alt}">'
+                f'<img src="{img_url}" alt="{alt_text}" '
                 f'onerror="this.onerror=null; this.src=\'{svg_placeholder}\';" /></div>')
     
     # Replace all markdown images with clickable HTML
@@ -506,9 +529,6 @@ if prompt := st.chat_input("Describe the problem..."):
             # We filter out UI-specific keys if we added any, but here we stick to standard role/content
             
             # Simple wrapper to handle the conversation
-            # For this simple implementation, we just pass the history. 
-            # Note: We might need to handle the tool messages carefully in history regeneration, 
-            # but for now we'll rely on the agent.run taking the current thread.
             # actually agent.run expects a list of messages. We should pass a copy.
             
             response = agent.run(st.session_state.messages.copy())

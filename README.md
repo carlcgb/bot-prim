@@ -10,7 +10,7 @@ Assistant intelligent en support client pour la documentation PrimLogix avec Gem
 
 - 🔍 **Recherche intelligente optimisée** : Expansion automatique des requêtes avec synonymes, 8 résultats optimisés avec scores de pertinence
 - 🔗 **Liens précis** : URLs exactes vers les sections spécifiques de l'aide en ligne utilisées dans la réponse
-- 📸 **Images contextuelles** : Captures d'écran de l'interface PrimLogix avec modal plein écran au clic
+- 📸 **Images contextuelles** : Captures d'écran de l'interface PrimLogix (max 400×300px) avec modal plein écran au clic pour agrandissement
 - 🌙 **Mode sombre** : Interface Streamlit en mode sombre par défaut
 - 🤖 **Gemini AI** : Support exclusif Gemini (gratuit, 60 req/min, 1500 req/jour)
 - 💻 **Multi-interface** : CLI et interface Web (Streamlit)
@@ -151,7 +151,7 @@ GEMINI_API_KEY = "votre_cle_api"
 - 📋 **Structure claire** : Étapes numérotées compactes mais complètes (format uniforme)
 - 🗺️ **Navigation détaillée** : Chemins complets pour chaque action (ex: "Administration > Paramètres > Configuration E-mail > Protocoles de courriel")
 - 🔗 **Liens précis** : URLs exactes vers les sections spécifiques utilisées dans la réponse
-- 📸 **Images contextuelles** : Captures d'écran de l'interface PrimLogix avec modal plein écran
+- 📸 **Images contextuelles** : Captures d'écran de l'interface PrimLogix (max 400×300px) avec modal plein écran au clic
 - 🔢 **Cohérence** : Chaque étape suit logiquement la précédente, pas d'étapes isolées
 - ✅ **Vérification** : Demande si le problème est résolu
 - 🌐 **Compléments techniques** : Recherche internet automatique pour ports SMTP, serveurs, etc. si non disponibles dans la doc

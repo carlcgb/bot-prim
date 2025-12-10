@@ -19,7 +19,7 @@ setup(
     name="primbot",
     version="1.0.4",
     author="Dev-NTIC",
-    description="PRIMBOT CLI - PrimLogix Debug Agent with Gemini AI and Ollama",
+    description="PRIMBOT CLI - PrimLogix Debug Agent with Gemini AI",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/carlcgb/bot-prim",
