@@ -1,0 +1,44 @@
+name: Test Qdrant Connection
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'knowledge_base*.py'
+      - 'migrate_to_qdrant.py'
+
+jobs:
+  test-qdrant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Test Qdrant Connection
+        env:
+          USE_QDRANT: true
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+        run: |
+          python -c "
+          import os
+          os.environ['USE_QDRANT'] = 'true'
+          os.environ['QDRANT_URL'] = '${{ secrets.QDRANT_URL }}'
+          os.environ['QDRANT_API_KEY'] = '${{ secrets.QDRANT_API_KEY }}'
+          
+          from knowledge_base import collection
+          count = collection.count()
+          print(f'✅ Connected to Qdrant Cloud!')
+          print(f'📊 Documents in collection: {count}')
+          "
+

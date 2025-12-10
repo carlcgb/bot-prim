@@ -199,3 +199,4 @@ Si vous rencontrez des problèmes:
 2. Vérifiez que pip est à jour: `pip install --upgrade pip`
 3. Consultez les issues sur [GitHub](https://github.com/carlcgb/bot-prim/issues)
 
+

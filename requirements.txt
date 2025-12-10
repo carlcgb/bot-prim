@@ -1,6 +1,7 @@
 streamlit
 beautifulsoup4
 chromadb
+qdrant-client
 sentence-transformers
 html2text
 requests

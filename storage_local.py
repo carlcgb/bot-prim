@@ -48,8 +48,10 @@ class LocalStorage:
             CREATE TABLE IF NOT EXISTS feedback (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 conversation_id INTEGER,
-                rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+                rating INTEGER CHECK (rating IN (-1, 0, 1)),  -- -1: thumbs down, 0: no feedback, 1: thumbs up
                 comment TEXT,
+                question TEXT,
+                answer TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (conversation_id) REFERENCES conversations(id)
             )
@@ -118,18 +120,22 @@ class LocalStorage:
         
         return conversations
     
-    def save_feedback(self, conversation_id: int, rating: int, comment: Optional[str] = None):
-        """Sauvegarde un feedback."""
+    def save_feedback(self, conversation_id: int, rating: int, comment: Optional[str] = None, 
+                     question: Optional[str] = None, answer: Optional[str] = None):
+        """Sauvegarde un feedback. rating: 1 = thumbs up, -1 = thumbs down."""
         conn = sqlite3.connect(self.db_file)
         cur = conn.cursor()
         
         cur.execute("""
-            INSERT INTO feedback (conversation_id, rating, comment)
-            VALUES (?, ?, ?)
-        """, (conversation_id, rating, comment))
+            INSERT INTO feedback (conversation_id, rating, comment, question, answer)
+            VALUES (?, ?, ?, ?, ?)
+        """, (conversation_id, rating, comment, question, answer))
         
         conn.commit()
+        feedback_id = cur.lastrowid
         conn.close()
+        
+        return feedback_id
     
     def get_feedback_stats(self) -> Dict:
         """Récupère les statistiques de feedback."""
@@ -137,29 +143,69 @@ class LocalStorage:
         cur = conn.cursor()
         
         # Nombre total de feedbacks
-        cur.execute("SELECT COUNT(*) FROM feedback")
+        cur.execute("SELECT COUNT(*) FROM feedback WHERE rating != 0")
         total = cur.fetchone()[0]
         
-        # Note moyenne
-        cur.execute("SELECT AVG(rating) FROM feedback")
-        avg_rating = cur.fetchone()[0] or 0
+        # Thumbs up
+        cur.execute("SELECT COUNT(*) FROM feedback WHERE rating = 1")
+        thumbs_up = cur.fetchone()[0]
         
-        # Distribution des notes
-        cur.execute("""
-            SELECT rating, COUNT(*) as count
-            FROM feedback
-            GROUP BY rating
-            ORDER BY rating
-        """)
-        distribution = {row[0]: row[1] for row in cur.fetchall()}
+        # Thumbs down
+        cur.execute("SELECT COUNT(*) FROM feedback WHERE rating = -1")
+        thumbs_down = cur.fetchone()[0]
+        
+        # Taux de satisfaction
+        if total > 0:
+            satisfaction_rate = round((thumbs_up / total) * 100, 2)
+        else:
+            satisfaction_rate = 0
+        
+        # Distribution
+        distribution = {
+            1: thumbs_up,
+            -1: thumbs_down
+        }
         
         conn.close()
         
         return {
             'total': total,
-            'average_rating': round(avg_rating, 2),
+            'thumbs_up': thumbs_up,
+            'thumbs_down': thumbs_down,
+            'satisfaction_rate': satisfaction_rate,
             'distribution': distribution
         }
+    
+    def get_negative_feedbacks(self, limit: int = 10) -> List[Dict]:
+        """Récupère les feedbacks négatifs pour analyse."""
+        conn = sqlite3.connect(self.db_file)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, conversation_id, rating, comment, question, answer, created_at
+            FROM feedback
+            WHERE rating = -1
+            ORDER BY created_at DESC
+            LIMIT ?
+        """, (limit,))
+        
+        rows = cur.fetchall()
+        conn.close()
+        
+        feedbacks = []
+        for row in rows:
+            feedbacks.append({
+                'id': row['id'],
+                'conversation_id': row['conversation_id'],
+                'rating': row['rating'],
+                'comment': row['comment'],
+                'question': row['question'],
+                'answer': row['answer'],
+                'created_at': row['created_at']
+            })
+        
+        return feedbacks
     
     def get_all_conversations(self, limit: int = 100) -> List[Dict]:
         """Récupère toutes les conversations (pour admin)."""
@@ -212,4 +258,5 @@ def get_storage() -> LocalStorage:
     if _storage_instance is None:
         _storage_instance = LocalStorage()
     return _storage_instance
+
 

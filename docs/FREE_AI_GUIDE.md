@@ -205,3 +205,4 @@ GEMINI_API_KEY = "votre_cle_api"
 
 **Dernière mise à jour**: Décembre 2024
 
+

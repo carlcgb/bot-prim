@@ -1,24 +1,56 @@
-import chromadb
-from chromadb.utils import embedding_functions
 import os
+import logging
 
-# Initialize ChromaDB Client
-# PersistentClient ensures data is saved to disk
-PERSIST_DIRECTORY = os.path.join(os.getcwd(), "chroma_db")
-client = chromadb.PersistentClient(path=PERSIST_DIRECTORY)
+logger = logging.getLogger(__name__)
 
-# Use a local embedding model (free and fast)
-# all-MiniLM-L6-v2 is a good default for sentence-transformers
-sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+# Determine which backend to use (Qdrant Cloud or ChromaDB local)
+USE_QDRANT = os.getenv('USE_QDRANT', 'false').lower() == 'true'
+QDRANT_URL = os.getenv('QDRANT_URL')
+QDRANT_API_KEY = os.getenv('QDRANT_API_KEY')
 
-# Get or create collection
-collection = client.get_or_create_collection(
-    name="primlogix_docs",
-    embedding_function=sentence_transformer_ef
-)
+# Global variables for backend
+collection = None
+qdrant_client = None
 
-def chunk_text(text, chunk_size=1000, overlap=200):
-    """Simple text chunking with overlap."""
+# Initialize backend
+if USE_QDRANT and QDRANT_URL and QDRANT_API_KEY:
+    # Use Qdrant Cloud
+    logger.info("Using Qdrant Cloud for knowledge base")
+    try:
+        from knowledge_base_qdrant import QdrantKnowledgeBase
+        qdrant_client = QdrantKnowledgeBase(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+        collection = qdrant_client  # Compatible interface
+    except Exception as e:
+        logger.error(f"Failed to initialize Qdrant: {e}")
+        logger.info("Falling back to ChromaDB local")
+        USE_QDRANT = False
+        qdrant_client = None
+
+if not USE_QDRANT or not qdrant_client:
+    # Use ChromaDB local (default)
+    logger.info("Using ChromaDB local for knowledge base")
+    import chromadb
+    from chromadb.utils import embedding_functions
+    
+    PERSIST_DIRECTORY = os.path.join(os.getcwd(), "chroma_db")
+    client = chromadb.PersistentClient(path=PERSIST_DIRECTORY)
+    
+    # Use a local embedding model (free and fast)
+    sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+    
+    # Get or create collection
+    collection = client.get_or_create_collection(
+        name="primlogix_docs",
+        embedding_function=sentence_transformer_ef
+    )
+
+
+def chunk_text(text, chunk_size=800, overlap=150):
+    """
+    Optimized text chunking with overlap.
+    Reduced chunk size from 1000 to 800 for better relevance and faster processing.
+    Reduced overlap from 200 to 150 for less redundancy.
+    """
     if not text:
         return []
     
@@ -27,12 +59,22 @@ def chunk_text(text, chunk_size=1000, overlap=200):
     while start < len(text):
         end = start + chunk_size
         chunk = text[start:end]
-        chunks.append(chunk)
+        # Only add non-empty chunks
+        if chunk.strip():
+            chunks.append(chunk)
         start += (chunk_size - overlap)
     return chunks
 
+
 def add_documents(pages_data):
     """Add a list of page data dicts to the vector DB."""
+    if USE_QDRANT and qdrant_client:
+        # Use Qdrant
+        from knowledge_base_qdrant import add_documents as qdrant_add
+        qdrant_add(pages_data, qdrant_client)
+        return
+    
+    # Use ChromaDB
     ids = []
     documents = []
     metadatas = []
@@ -84,6 +126,7 @@ def add_documents(pages_data):
             
     print(f"Total documents in DB: {collection.count()}")
 
+
 def query_knowledge_base(query, n_results=10):
     """Query the database for relevant chunks.
     
@@ -93,15 +136,20 @@ def query_knowledge_base(query, n_results=10):
     
     Returns:
         Dictionary with 'documents', 'metadatas', 'distances', and 'ids'
-        Note: 'ids' are automatically included by ChromaDB, don't need to be in include
     """
-    results = collection.query(
-        query_texts=[query],
-        n_results=n_results,
-        include=['documents', 'metadatas', 'distances']
-    )
-    # ChromaDB automatically includes 'ids' in results, no need to specify it
-    return results
+    if USE_QDRANT and qdrant_client:
+        # Use Qdrant
+        from knowledge_base_qdrant import query_knowledge_base as qdrant_query
+        return qdrant_query(query, n_results, qdrant_client)
+    else:
+        # Use ChromaDB
+        results = collection.query(
+            query_texts=[query],
+            n_results=n_results,
+            include=['documents', 'metadatas', 'distances']
+        )
+        return results
+
 
 if __name__ == "__main__":
     # Test adding some dummy data if run directly but ideally called from a script

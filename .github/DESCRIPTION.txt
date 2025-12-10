@@ -1,2 +1,3 @@
 Assistant intelligent pour la documentation PrimLogix avec Gemini AI. 100% gratuit, interface CLI et Web, captures d'écran pertinentes, recherche sémantique.
 
+

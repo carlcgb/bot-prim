@@ -100,56 +100,205 @@ def scrape_page(url):
                     except (ValueError, AttributeError):
                         pass
                     
-                    # Filter criteria: exclude small icons/logos
+                    # Filter criteria: exclude small icons/logos and square icon formats
                     # Icons are typically < 100px in either dimension
+                    # Also exclude square formats like 63x63, 64x64, etc. (common icon sizes)
                     is_small_icon = False
+                    is_square_icon = False
+                    
                     if width_val and width_val < 100:
                         is_small_icon = True
                     if height_val and height_val < 100:
                         is_small_icon = True
                     
-                    # Filter by filename - exclude common icon/logo patterns
+                    # Exclude square icon formats (63x63, 64x64, 48x48, 32x32, etc.)
+                    # Icons are often perfect squares and small
+                    if width_val and height_val:
+                        # Check if it's a square (width == height) and small (common icon sizes)
+                        if width_val == height_val:
+                            # Common icon square sizes to exclude
+                            common_icon_sizes = [16, 20, 24, 32, 40, 48, 50, 56, 60, 63, 64, 72, 80, 96, 100, 128]
+                            if width_val in common_icon_sizes:
+                                is_square_icon = True
+                            # Also exclude any square smaller than 150px (likely an icon)
+                            elif width_val < 150:
+                                is_square_icon = True
+                    
+                    # Filter by filename - exclude common icon/logo/arrow/emoji patterns
                     img_filename = img_url.lower()
                     icon_patterns = [
-                        'icon', 'logo', 'button', 'arrow', 'chevron', 
-                        'nav', 'menu', 'bullet', 'dot', 'star', 'check',
-                        'close', 'delete', 'edit', 'add', 'remove',
-                        '40x40', '32x32', '24x24', '16x16', '20x20',
-                        'favicon', 'sprite', 'glyph'
+                        'icon', 'logo', 'button', 'arrow', 'chevron', 'fleche', 'flèche',
+                        'nav', 'menu', 'bullet', 'dot', 'star', 'check', 'emoji',
+                        'close', 'delete', 'edit', 'add', 'remove', 'plus', 'minus',
+                        '40x40', '32x32', '24x24', '16x16', '20x20', '30x30', '48x48',
+                        '50x50', '56x56', '60x60', '63x63', '64x64', '72x72', '80x80',
+                        '96x96', '100x100', '128x128',
+                        'favicon', 'sprite', 'glyph', 'svg', 'ico',
+                        'up', 'down', 'left', 'right', 'next', 'prev', 'previous',
+                        'haut', 'bas', 'gauche', 'droite', 'suivant', 'precedent',
+                        # Specific icon types
+                        'lightbulb', 'ampoule', 'bulb', 'lamp', 'lampe',
+                        'placeholder', 'place-holder', 'generic', 'generique',
+                        # Person/people icons
+                        'person', 'people', 'user', 'utilisateur', 'profil', 'profile',
+                        'head', 'shoulder', 'silhouette', 'avatar', 'tête', 'épaules',
+                        # Checkmark/verification icons
+                        'checkmark', 'check', 'verification', 'vérification', 'tick', 'coche',
+                        'check-icon', 'icone-check', 'icone-verification',
+                        # Remuneration/payment icons
+                        'remuneration', 'rémunération', 'payment', 'paiement', 'money', 'argent',
+                        'cash', 'hand-money', 'main-argent', 'salary', 'salaire',
+                        # Feedback icons (thumbs up/down)
+                        'thumbs', 'thumbs-up', 'thumbs-down', 'thumbsup', 'thumbsdown',
+                        'thumb-up', 'thumb-down', 'like', 'dislike', 'feedback',
+                        'pouce', 'pouce-haut', 'pouce-bas',
+                        # Document/folder icons (NOT screenshots)
+                        'document', 'doc', 'file', 'folder', 'dossier', 'cv', 'resume',
+                        'pdf-icon', 'word-icon', 'excel-icon', 'file-icon', 'folder-icon',
+                        'document-icon', 'icone-document', 'icone-dossier', 'icone-fichier'
                     ]
                     
-                    # Check if filename suggests it's an icon/logo
+                    # Check if filename suggests it's an icon/logo/arrow/emoji
                     is_icon_filename = any(pattern in img_filename for pattern in icon_patterns)
                     
-                    # Filter by alt/title text - exclude generic icon descriptions
+                    # Filter by alt/title text - exclude generic icon/arrow/emoji descriptions
                     alt_text = img.get('alt', '') or img.get('title', '') or ''
                     title_text = img.get('title', '')
                     combined_text = (alt_text + ' ' + title_text).lower()
-                    icon_text_patterns = ['icon', 'logo', 'button', 'arrow', 'chevron', 'nav']
+                    icon_text_patterns = [
+                        'icon', 'logo', 'button', 'arrow', 'chevron', 'fleche', 'flèche',
+                        'nav', 'menu', 'emoji', 'icone', 'icône', 'bouton',
+                        'haut', 'bas', 'gauche', 'droite', 'suivant', 'precedent',
+                        'cercle', 'circle', 'round', 'rond', 'symbole', 'symbol',
+                        # Specific icon types
+                        'lightbulb', 'ampoule', 'bulb', 'lamp', 'lampe', 'ampoule',
+                        'placeholder', 'place-holder', 'generic', 'generique',
+                        'plus sign', 'signe plus', 'add icon', 'icone ajout',
+                        'magnifying glass', 'loupe', 'search icon', 'icone recherche',
+                        'thumbs up', 'thumbs down', 'pouce', 'camera icon', 'icone camera',
+                        'speech bubble', 'bulle de dialogue', 'double arrow', 'resize',
+                        # Person/people icons
+                        'person icon', 'icone personne', 'icone utilisateur', 'icone profil',
+                        'silhouette', 'avatar', 'tête', 'épaules', 'head icon', 'shoulder icon',
+                        # Checkmark/verification icons
+                        'checkmark', 'check icon', 'icone check', 'icone vérification',
+                        'tick', 'coche', 'verification icon', 'icone verification',
+                        # Remuneration/payment icons
+                        'remuneration', 'rémunération', 'payment icon', 'icone paiement',
+                        'money icon', 'icone argent', 'hand money', 'main argent',
+                        'salary icon', 'icone salaire',
+                        # Feedback icons (thumbs up/down) - STRICT FILTERING
+                        'thumbs up', 'thumbs down', 'thumbs-up', 'thumbs-down',
+                        'thumbsup', 'thumbsdown', 'thumb up', 'thumb down',
+                        'like button', 'dislike button', 'feedback button',
+                        'pouce', 'pouce-haut', 'pouce-bas', 'pouce vers le haut', 'pouce vers le bas',
+                        'like icon', 'dislike icon', 'feedback icon', 'icone feedback',
+                        'icone pouce', 'icone like', 'icone dislike',
+                        # Document/folder icons (NOT screenshots) - STRICT FILTERING
+                        'document icon', 'folder icon', 'file icon', 'dossier icon',
+                        'cv icon', 'resume icon', 'document with', 'folder with',
+                        'document cv', 'icone document', 'icone dossier', 'icone fichier',
+                        'icone cv', 'document avec loupe', 'dossier avec loupe',
+                        'document with magnifying', 'folder with magnifying'
+                    ]
                     is_icon_text = any(pattern in combined_text for pattern in icon_text_patterns)
                     
-                    # Skip if it's clearly an icon/logo
-                    if is_small_icon or (is_icon_filename and not any(x in img_filename for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran'])):
-                        continue
-                    if is_icon_text and not any(x in combined_text for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage']):
-                        continue
+                    # Detect simple icon patterns (circle with symbol, lightbulb, plus sign, etc.)
+                    # These are often described as "cercle vert", "green circle", "ampoule", etc.
+                    simple_icon_patterns = [
+                        'cercle', 'circle', 'rond', 'round',
+                        'symbole', 'symbol', 'signe', 'sign',
+                        'icone', 'icon', 'bouton', 'button',
+                        'lightbulb', 'ampoule', 'bulb', 'lamp', 'lampe',
+                        'plus sign', 'signe plus', 'add icon', 'icone ajout',
+                        'placeholder', 'place-holder', 'generic', 'generique',
+                        # Person/people icons
+                        'person', 'people', 'user', 'utilisateur', 'profil', 'profile',
+                        'head', 'shoulder', 'silhouette', 'avatar', 'tête', 'épaules',
+                        # Checkmark/verification icons
+                        'checkmark', 'check', 'verification', 'vérification', 'tick', 'coche',
+                        # Remuneration/payment icons
+                        'remuneration', 'rémunération', 'payment', 'paiement', 'money', 'argent',
+                        'cash', 'hand', 'main', 'salary', 'salaire'
+                    ]
+                    # If the description is very short and contains icon patterns, it's likely an icon
+                    is_simple_icon = False
+                    if len(combined_text) < 80:  # Short description (increased from 50 to 80)
+                        if any(pattern in combined_text for pattern in simple_icon_patterns):
+                            # Check if it's NOT explicitly a screenshot
+                            if not any(x in combined_text for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog', 'application', 'logiciel']):
+                                is_simple_icon = True
                     
-                    # Only include images that look like screenshots:
-                    # - Have reasonable size (or no size specified, which usually means full-size)
-                    # - Are in /images/ directory (where screenshots are typically stored)
-                    # - Have screenshot-related keywords in filename or context
+                    # Additional check: Exclude images that are too square (icons are often square or near-square)
+                    # Real screenshots have a width/height ratio significantly different from 1.0
+                    is_near_square = False
+                    if width_val and height_val and width_val > 0 and height_val > 0:
+                        ratio = max(width_val, height_val) / min(width_val, height_val)
+                        # If ratio is close to 1.0 (square or near-square) and image is not very large, likely an icon
+                        if 0.9 <= ratio <= 1.1:  # Within 10% of square
+                            if width_val < 300:  # And not very large
+                                is_near_square = True
+                    
+                    # STRICT FILTERING: Skip if it's clearly an icon/logo/arrow/emoji
+                    # Only allow if it's explicitly a screenshot/interface image
+                    if is_small_icon or is_square_icon or is_simple_icon or is_near_square:
+                        # Small images, square icons, simple icons, or near-square images are almost always icons, unless explicitly marked as screenshot
+                        if not any(x in img_filename or x in combined_text for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog', 'application', 'logiciel']):
+                            continue
+                    
+                    if is_icon_filename:
+                        # Filename suggests icon/arrow - only allow if explicitly a screenshot
+                        if not any(x in img_filename for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog', 'images/']):
+                            continue
+                    
+                    if is_icon_text:
+                        # Alt/title suggests icon/arrow - only allow if explicitly a screenshot
+                        if not any(x in combined_text for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog']):
+                            continue
+                    
+                    # STRICT REQUIREMENT: Only include images that are EXPLICITLY screenshots:
+                    # - Must be in /images/ directory (where screenshots are typically stored)
+                    # - AND must NOT be square/near-square (screenshots are rectangular)
+                    # - AND must have explicit screenshot keywords in filename/description
+                    # - OR have screenshot keywords in context/caption
                     is_likely_screenshot = False
-                    if '/images/' in img_url.lower():
-                        is_likely_screenshot = True
-                    if any(keyword in img_filename for keyword in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog']):
-                        is_likely_screenshot = True
-                    if any(keyword in context_text.lower() for keyword in ['capture', 'screenshot', 'interface', 'fenetre', 'ecran', 'affichage']):
-                        is_likely_screenshot = True
-                    if figure_caption and any(keyword in figure_caption.lower() for keyword in ['capture', 'screenshot', 'interface', 'fenetre', 'ecran']):
+                    
+                    # Priority 1: Images in /images/ directory (most reliable indicator)
+                    # BUT exclude if they're square/near-square (likely icons even in /images/)
+                    if '/images/' in img_url.lower() and not is_icon_filename:
+                        # Additional check: exclude square/near-square images even from /images/
+                        if width_val and height_val and width_val > 0 and height_val > 0:
+                            ratio = max(width_val, height_val) / min(width_val, height_val)
+                            # Only accept if it's NOT square/near-square (ratio > 1.2 means significantly rectangular)
+                            if ratio > 1.2 or width_val >= 400:  # Rectangular OR very large (likely a real screenshot)
+                                is_likely_screenshot = True
+                        else:
+                            # No dimensions available, trust /images/ directory
+                            is_likely_screenshot = True
+                    
+                    # Priority 2: Explicit screenshot keywords in filename
+                    screenshot_filename_keywords = ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog', 'ecran']
+                    if any(keyword in img_filename for keyword in screenshot_filename_keywords):
                         is_likely_screenshot = True
                     
-                    # Skip if it doesn't look like a screenshot
+                    # Priority 3: Screenshot keywords in alt/title
+                    if any(keyword in combined_text for keyword in screenshot_filename_keywords):
+                        is_likely_screenshot = True
+                    
+                    # Priority 4: Screenshot keywords in context
+                    if context_text and any(keyword in context_text.lower() for keyword in ['capture', 'screenshot', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog']):
+                        is_likely_screenshot = True
+                    
+                    # Priority 5: Screenshot keywords in figure caption
+                    if figure_caption and any(keyword in figure_caption.lower() for keyword in ['capture', 'screenshot', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog']):
+                        is_likely_screenshot = True
+                    
+                    # STRICT: Skip if it doesn't look like a screenshot
                     if not is_likely_screenshot:
+                        continue
+                    
+                    # Additional check: Exclude SVG files (almost always icons/vectors)
+                    if img_url.lower().endswith('.svg'):
                         continue
                     
                     # Build enhanced description
@@ -167,7 +316,8 @@ def scrape_page(url):
                     enhanced_description = " | ".join(description_parts) if description_parts else 'Capture d\'écran de l\'interface PrimLogix'
                     
                     # Only include real image files (exclude SVG which are often icons)
-                    if any(img_url.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']):
+                    # Only PNG, JPG, JPEG, WEBP - exclude GIF (often animated icons/emojis)
+                    if any(img_url.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp']):
                         images.append({
                             "url": img_url,
                             "alt": alt_text or 'Screenshot',
@@ -176,7 +326,8 @@ def scrape_page(url):
                             "context": context_text,  # Context around the image
                             "caption": figure_caption,  # Figure caption if available
                             "width": width_val,  # Store dimensions for later filtering
-                            "height": height_val
+                            "height": height_val,
+                            "source_url": url  # Store the page URL where this image was found
                         })
             
             title = soup.title.string if soup.title else url

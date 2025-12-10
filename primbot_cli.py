@@ -8,6 +8,7 @@ import argparse
 import sys
 import os
 import json
+import re
 from pathlib import Path
 from agent import PrimAgent
 from knowledge_base import collection
@@ -229,6 +230,12 @@ def cmd_ask(args):
                 print("PRIMBOT: ", end="", flush=True)
                 
                 response = agent.run(messages.copy())
+                # Remove images from response for CLI (markdown image syntax: ![alt](url))
+                response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
+                # Remove image sections and references
+                response = re.sub(r'(?i)(image\s*\d+|capture\s*d\'écran\s*\d+|screenshot\s*\d+)[:：]?\s*[^\n]*\n?', '', response)
+                # Remove empty lines left by image removal
+                response = re.sub(r'\n\s*\n\s*\n+', '\n\n', response)
                 print(response)
                 print()  # Empty line
                 
@@ -245,6 +252,12 @@ def cmd_ask(args):
         try:
             messages = [{"role": "user", "content": args.query}]
             response = agent.run(messages)
+            # Remove images from response for CLI (markdown image syntax: ![alt](url))
+            response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
+            # Remove image sections and references
+            response = re.sub(r'(?i)(image\s*\d+|capture\s*d\'écran\s*\d+|screenshot\s*\d+)[:：]?\s*[^\n]*\n?', '', response)
+            # Remove empty lines left by image removal
+            response = re.sub(r'\n\s*\n\s*\n+', '\n\n', response)
             print(response)
         except Exception as e:
             print(f"❌ Erreur: {e}", file=sys.stderr)

@@ -3,8 +3,27 @@ from agent import PrimAgent
 from knowledge_base import collection
 from storage_local import get_storage
 import os
+import json
+from pathlib import Path
 
 st.set_page_config(page_title="PrimLogix Debug Agent", layout="wide")
+
+# Load Qdrant secrets from Streamlit (for Streamlit Cloud deployment)
+# Only try to access secrets if they exist (to avoid errors in local development)
+try:
+    if hasattr(st, 'secrets'):
+        # Check if secrets file exists by trying to access it safely
+        try:
+            if 'qdrant' in st.secrets:
+                os.environ['USE_QDRANT'] = str(st.secrets['qdrant'].get('USE_QDRANT', 'false'))
+                os.environ['QDRANT_URL'] = st.secrets['qdrant'].get('QDRANT_URL', '')
+                os.environ['QDRANT_API_KEY'] = st.secrets['qdrant'].get('QDRANT_API_KEY', '')
+        except Exception:
+            # Secrets file doesn't exist, use environment variables or .env file instead
+            pass
+except Exception:
+    # If secrets are not available, continue with environment variables
+    pass
 
 st.title("🤖 PrimLogix Debug Agent")
 
@@ -70,12 +89,21 @@ if kb_count == 0:
 else:
     st.sidebar.success(f"📚 Base de connaissances: {kb_count} documents")
     
-    # Afficher le nombre de conversations sauvegardées
+    # Afficher le nombre de conversations sauvegardées et statistiques de feedback
     try:
         storage = get_storage()
         conv_count = storage.count()
         if conv_count > 0:
             st.sidebar.info(f"💬 Conversations sauvegardées: {conv_count}")
+        
+        # Afficher les statistiques de feedback
+        feedback_stats = storage.get_feedback_stats()
+        if feedback_stats['total'] > 0:
+            st.sidebar.markdown("---")
+            st.sidebar.markdown("### 📊 Feedback")
+            st.sidebar.metric("👍 Utile", feedback_stats['thumbs_up'])
+            st.sidebar.metric("👎 Pas utile", feedback_stats['thumbs_down'])
+            st.sidebar.metric("Satisfaction", f"{feedback_stats['satisfaction_rate']}%")
     except Exception:
         pass
 
@@ -89,14 +117,25 @@ base_url = None
 model_name = "gemini-2.5-flash"
 
 if provider_type == "Google Gemini":
-    # Get Gemini API key from Streamlit secrets (for Streamlit Cloud) or environment variable (for other deployments)
-    # Priority: Streamlit secrets > Environment variable > User input
+    # Get Gemini API key with priority: Streamlit secrets > CLI config > Environment variable > User input
     default_gemini_key = ""
+    
+    # Priority 1: Streamlit Cloud secrets
     if hasattr(st.secrets, "GEMINI_API_KEY"):
-        # Streamlit Cloud secrets
         default_gemini_key = st.secrets.GEMINI_API_KEY
-    elif "GEMINI_API_KEY" in os.environ:
-        # Environment variable (GitHub Actions, Cloudflare, etc.)
+    # Priority 2: CLI config file (~/.primbot/config.json)
+    elif not default_gemini_key:
+        try:
+            config_file = Path.home() / ".primbot" / "config.json"
+            if config_file.exists():
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    cli_config = json.load(f)
+                    if cli_config.get('gemini_api_key'):
+                        default_gemini_key = cli_config['gemini_api_key']
+        except Exception:
+            pass  # Silently fail if config file doesn't exist or can't be read
+    # Priority 3: Environment variable
+    if not default_gemini_key and "GEMINI_API_KEY" in os.environ:
         default_gemini_key = os.getenv("GEMINI_API_KEY", "")
     
     st.sidebar.info("🆓 **Gratuit** : Gemini offre un plan gratuit généreux. Obtenez votre clé sur [Google AI Studio](https://aistudio.google.com/)")
@@ -107,6 +146,21 @@ if provider_type == "Google Gemini":
         type="password", 
         help="Get your FREE API key from https://aistudio.google.com/. No credit card required!"
     )
+    
+    # Save to CLI config if user enters a new key
+    if api_key and api_key != default_gemini_key:
+        try:
+            config_file = Path.home() / ".primbot" / "config.json"
+            config_file.parent.mkdir(exist_ok=True)
+            config = {}
+            if config_file.exists():
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            config['gemini_api_key'] = api_key
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+        except Exception:
+            pass  # Silently fail if can't save config
     base_url = None  # Gemini uses google-generativeai library directly, not OpenAI-compatible endpoint
     model_name = st.sidebar.selectbox(
         "Model Name", 
@@ -141,105 +195,16 @@ for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             content = message["content"]
             
-            # Check if content contains screenshots section
-            if "[SCREENSHOTS]" in content:
-                # Split content into text and images
-                parts = content.split("[SCREENSHOTS]")
-                text_content = parts[0].strip()
-                image_section = parts[1].strip() if len(parts) > 1 else ""
-                
-                # Display text content
-                if text_content:
-                    st.markdown(text_content)
-                
-                # Display images
-                if image_section:
-                    # Extract image URLs and captions from markdown format ![alt](url)
-                    import re
-                    # Match full markdown image syntax to get both caption and URL
-                    image_pattern = r'!\[(.*?)\]\((.*?)\)'
-                    image_matches = re.findall(image_pattern, image_section)
-                    
-                    if image_matches:
-                        st.markdown("### 📸 Captures d'écran de la documentation")
-                        st.markdown(f"*{len(image_matches)} capture(s) d'écran disponible(s)*")
-                        
-                        # Filter and validate URLs with captions
-                        valid_images = []
-                        for caption, img_url in image_matches[:12]:  # Increased to 12 images
-                            img_url = img_url.strip()
-                            if img_url and (img_url.startswith('http://') or img_url.startswith('https://')):
-                                valid_images.append((caption.strip() or f"Capture {len(valid_images)+1}", img_url))
-                        
-                        if valid_images:
-                            # Display images in a grid (2 columns for better visibility)
-                            num_cols = min(2, len(valid_images))
-                            cols = st.columns(num_cols)
-                            
-                            for idx, (caption, img_url) in enumerate(valid_images):
-                                col_idx = idx % num_cols
-                                with cols[col_idx]:
-                                    try:
-                                        # Try to display image with timeout
-                                        import requests
-                                        from io import BytesIO
-                                        from PIL import Image
-                                        
-                                        # Download image with better error handling
-                                        headers = {
-                                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                                        }
-                                        img_response = requests.get(img_url, headers=headers, timeout=10, stream=True)
-                                        img_response.raise_for_status()
-                                        
-                                        # Load and display
-                                        img = Image.open(BytesIO(img_response.content))
-                                        
-                                        # Verify image is valid and has dimensions
-                                        if img.size[0] == 0 or img.size[1] == 0:
-                                            raise ValueError("Invalid image dimensions")
-                                        
-                                        # Calculate max width to prevent stretching while keeping reasonable size
-                                        # Use max width of 600px for grid display (2 columns)
-                                        max_width = 600
-                                        original_width, original_height = img.size
-                                        
-                                        # Only resize if image is larger than max_width
-                                        if original_width > max_width:
-                                            # Calculate new height maintaining aspect ratio
-                                            aspect_ratio = original_height / original_width
-                                            new_width = max_width
-                                            new_height = int(max_width * aspect_ratio)
-                                            # Use LANCZOS resampling for high quality, fallback to ANTIALIAS for older PIL
-                                            try:
-                                                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                                            except AttributeError:
-                                                # Fallback for older PIL versions
-                                                img = img.resize((new_width, new_height), Image.LANCZOS)
-                                        
-                                        # Use caption from markdown or default
-                                        display_caption = caption if caption and not caption.startswith("Capture d'écran") else f"Capture {idx+1}"
-                                        
-                                        # Display with use_container_width=False to preserve aspect ratio
-                                        st.image(img, caption=display_caption, use_container_width=False, width=None)
-                                        
-                                        # Add link to original image
-                                        st.caption(f"[🔗 Ouvrir l'image]({img_url})")
-                                    except requests.exceptions.Timeout:
-                                        st.warning(f"⏱️ Timeout lors du chargement")
-                                        st.markdown(f"[📷 Voir l'image]({img_url})")
-                                    except requests.exceptions.RequestException as e:
-                                        st.warning(f"⚠️ Erreur de chargement")
-                                        st.markdown(f"[📷 Voir l'image]({img_url})")
-                                    except Exception as e:
-                                        # If image fails to load, show as link
-                                        st.warning(f"⚠️ Impossible d'afficher l'image")
-                                        st.markdown(f"[📷 Voir l'image]({img_url})")
-                                        if "PIL" not in str(e):  # Don't show PIL errors to user
-                                            st.caption(f"Erreur: {str(e)[:50]}")
-            else:
-                # Regular content without images
-                st.markdown(content)
+            # Remove images from content and display only text with URLs
+            import re
+            # Remove markdown image syntax: ![alt](url)
+            content = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', content)
+            # Remove image sections and references
+            content = re.sub(r'(?i)(image\s*\d+|capture\s*d\'écran\s*\d+|screenshot\s*\d+)[:：]?\s*[^\n]*\n?', '', content)
+            # Clean up multiple empty lines
+            content = re.sub(r'\n\s*\n\s*\n+', '\n\n', content)
+            # Display content (now without images, only URLs)
+            st.markdown(content)
 
 # Chat Input
 if prompt := st.chat_input("Describe the problem..."):
@@ -280,114 +245,76 @@ if prompt := st.chat_input("Describe the problem..."):
             
             response = agent.run(st.session_state.messages.copy())
             
-            # Display response with images parsed inline
-            # Parse markdown images and display them inline with the text
+            # Remove images from response and display only text with URLs
             import re
+            # Remove markdown image syntax: ![alt](url)
+            response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
+            # Remove image sections and references
+            response = re.sub(r'(?i)(image\s*\d+|capture\s*d\'écran\s*\d+|screenshot\s*\d+)[:：]?\s*[^\n]*\n?', '', response)
+            # Clean up multiple empty lines
+            response = re.sub(r'\n\s*\n\s*\n+', '\n\n', response)
             
-            # Find all markdown images in the response
-            image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
-            image_matches = list(re.finditer(image_pattern, response))
-            
-            if image_matches:
-                # Split response into parts (text and images)
-                parts = []
-                last_end = 0
-                images_to_display = []
-                
-                for match in image_matches:
-                    # Add text before image
-                    if match.start() > last_end:
-                        parts.append(("text", response[last_end:match.start()]))
-                    
-                    # Extract image info
-                    alt_text = match.group(1)
-                    img_url = match.group(2).strip()
-                    
-                    if img_url and (img_url.startswith('http://') or img_url.startswith('https://')):
-                        images_to_display.append({
-                            "url": img_url,
-                            "alt": alt_text,
-                            "position": match.start()
-                        })
-                        # Add placeholder for image
-                        parts.append(("image", len(images_to_display) - 1))
-                    
-                    last_end = match.end()
-                
-                # Add remaining text
-                if last_end < len(response):
-                    parts.append(("text", response[last_end:]))
-                
-                # Display parts in order (text and images inline)
-                for part_type, content in parts:
-                    if part_type == "text" and content.strip():
-                        message_placeholder.markdown(content)
-                    elif part_type == "image":
-                        img_idx = content
-                        img_info = images_to_display[img_idx]
-                        
-                        try:
-                            # Download and display image inline
-                            import requests
-                            from io import BytesIO
-                            from PIL import Image
-                            
-                            headers = {
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                            }
-                            img_response = requests.get(img_info["url"], headers=headers, timeout=10, stream=True)
-                            img_response.raise_for_status()
-                            
-                            img = Image.open(BytesIO(img_response.content))
-                            
-                            # Verify image is valid and has dimensions
-                            if img.size[0] == 0 or img.size[1] == 0:
-                                raise ValueError("Invalid image dimensions")
-                            
-                            # Calculate max width to prevent stretching while keeping reasonable size
-                            # Use max width of 800px to prevent huge images, but preserve aspect ratio
-                            max_width = 800
-                            original_width, original_height = img.size
-                            
-                            # Only resize if image is larger than max_width
-                            if original_width > max_width:
-                                # Calculate new height maintaining aspect ratio
-                                aspect_ratio = original_height / original_width
-                                new_width = max_width
-                                new_height = int(max_width * aspect_ratio)
-                                # Use LANCZOS resampling for high quality, fallback to ANTIALIAS for older PIL
-                                try:
-                                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                                except AttributeError:
-                                    # Fallback for older PIL versions
-                                    img = img.resize((new_width, new_height), Image.LANCZOS)
-                            
-                            caption = img_info["alt"] if img_info["alt"] else f"Capture d'écran {img_idx + 1}"
-                            
-                            # Display with use_container_width=False to preserve aspect ratio
-                            # This prevents stretching and weird distortions
-                            st.image(img, caption=caption, use_container_width=False, width=None)
-                            st.caption(f"[🔗 Ouvrir l'image]({img_info['url']})")
-                        except Exception as e:
-                            # If image fails, show as markdown link
-                            st.markdown(f"[📷 {img_info['alt'] or 'Voir l\'image'}]({img_info['url']})")
-            else:
-                # No images, display regular content
-                message_placeholder.markdown(response)
+            # Display response (now without images, only URLs)
+            message_placeholder.markdown(response)
             
             st.session_state.messages.append({"role": "assistant", "content": response})
             
-            # Sauvegarder la conversation localement
+            # Sauvegarder la conversation localement et obtenir conversation_id pour feedback
+            conversation_id = None
             try:
                 storage = get_storage()
                 user_id = "streamlit_user"  # Vous pouvez personnaliser selon votre système d'authentification
-                storage.save_conversation(user_id, prompt, response, metadata={
+                conversation_id = storage.save_conversation(user_id, prompt, response, metadata={
                     "provider": provider_type,
                     "model": model_name
                 })
             except Exception as save_error:
                 # Ne pas bloquer si la sauvegarde échoue
                 st.sidebar.warning(f"⚠️ Impossible de sauvegarder la conversation: {save_error}")
+            
+            # Ajouter les boutons de feedback (thumbs up/down) après la réponse
+            if conversation_id:
+                st.markdown("---")
+                col1, col2, col3 = st.columns([1, 1, 20])
+                with col1:
+                    thumbs_up_key = f"thumbs_up_{conversation_id}_{len(st.session_state.messages)}"
+                    thumbs_up = st.button("👍", key=thumbs_up_key, help="Cette réponse était utile", use_container_width=True)
+                with col2:
+                    thumbs_down_key = f"thumbs_down_{conversation_id}_{len(st.session_state.messages)}"
+                    thumbs_down = st.button("👎", key=thumbs_down_key, help="Cette réponse n'était pas utile", use_container_width=True)
+                
+                # Gérer le feedback thumbs up
+                if thumbs_up:
+                    try:
+                        storage = get_storage()
+                        storage.save_feedback(conversation_id, rating=1, question=prompt, answer=response)
+                        st.success("✅ Merci pour votre feedback ! Cela nous aide à améliorer PRIMBOT.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erreur lors de la sauvegarde du feedback: {e}")
+                
+                # Gérer le feedback thumbs down
+                if thumbs_down:
+                    # Demander un commentaire optionnel
+                    with st.expander("💬 Pourquoi cette réponse n'était pas utile ?", expanded=True):
+                        comment_key = f"comment_{conversation_id}_{len(st.session_state.messages)}"
+                        comment = st.text_area(
+                            "Votre commentaire (optionnel) :",
+                            placeholder="Ex: La réponse était confuse, manquait d'informations, images non pertinentes, pas assez de détails, etc.",
+                            key=comment_key,
+                            height=100
+                        )
+                        submit_key = f"submit_feedback_{conversation_id}_{len(st.session_state.messages)}"
+                        submit_feedback = st.button("Envoyer le feedback", key=submit_key, type="primary")
+                        
+                        if submit_feedback:
+                            try:
+                                storage = get_storage()
+                                storage.save_feedback(conversation_id, rating=-1, comment=comment, question=prompt, answer=response)
+                                st.success("✅ Merci pour votre feedback détaillé ! Nous utiliserons ces informations pour améliorer PRIMBOT.")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erreur lors de la sauvegarde du feedback: {e}")
             
         except Exception as e:
             error_msg = str(e)

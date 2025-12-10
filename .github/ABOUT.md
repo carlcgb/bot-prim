@@ -30,3 +30,4 @@ Python 3.8+ | Gemini AI | Ollama | ChromaDB | Streamlit
 
 Propriétaire - Dev-NTIC
 
+
