@@ -21,7 +21,14 @@ with warnings.catch_warnings():
             from duckduckgo_search import DDGS
         except ImportError:
             DDGS = None
-from knowledge_base import query_knowledge_base
+# Import knowledge_base function (lazy import to avoid circular dependencies)
+try:
+    from knowledge_base import query_knowledge_base
+except ImportError as e:
+    logger.warning(f"Could not import query_knowledge_base: {e}")
+    # Define a fallback function
+    def query_knowledge_base(query, n_results=10):
+        return {"documents": [[]], "metadatas": [[]], "distances": [[]]}
 import json
 import logging
 import google.generativeai as genai
