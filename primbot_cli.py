@@ -11,6 +11,8 @@ import json
 import re
 import threading
 import time
+from contextlib import contextmanager
+from io import StringIO
 from pathlib import Path
 from agent import PrimAgent
 from knowledge_base import collection
@@ -25,34 +27,64 @@ def ensure_config_dir():
     return CONFIG_DIR
 
 class ThinkingAnimation:
-    """Simple thinking animation for CLI."""
+    """Simple thinking animation for CLI that hides all output."""
     def __init__(self):
         self.stop_event = threading.Event()
         self.thread = None
         self.spinner_chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
         self.current_char = 0
+        self.original_stdout = None
+        self.original_stderr = None
+        self.null_stream = None
     
     def _animate(self):
         """Animation loop."""
         while not self.stop_event.is_set():
             char = self.spinner_chars[self.current_char % len(self.spinner_chars)]
-            print(f'\rPRIMBOT: {char} Réflexion en cours...', end='', flush=True)
+            # Write directly to original stdout to bypass redirection
+            if self.original_stdout:
+                self.original_stdout.write(f'\rPRIMBOT: {char} Réflexion en cours...')
+                self.original_stdout.flush()
             self.current_char += 1
             time.sleep(0.1)
     
-    def start(self):
-        """Start the animation."""
+    def __enter__(self):
+        """Context manager entry - start animation and hide output."""
+        # Save original streams
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        
+        # Create null stream to hide output
+        self.null_stream = StringIO()
+        
+        # Redirect stdout and stderr to null
+        sys.stdout = self.null_stream
+        sys.stderr = self.null_stream
+        
+        # Start animation
         self.stop_event.clear()
         self.thread = threading.Thread(target=self._animate, daemon=True)
         self.thread.start()
+        
+        return self
     
-    def stop(self):
-        """Stop the animation."""
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - stop animation and restore output."""
+        # Stop animation
         self.stop_event.set()
         if self.thread:
             self.thread.join(timeout=0.5)
-        # Clear the line
-        print('\r' + ' ' * 50 + '\r', end='', flush=True)
+        
+        # Restore original streams
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+        
+        # Clear the animation line
+        if self.original_stdout:
+            self.original_stdout.write('\r' + ' ' * 50 + '\r')
+            self.original_stdout.flush()
+        
+        return False  # Don't suppress exceptions
 
 def load_config():
     """Load configuration from file."""
@@ -230,15 +262,9 @@ def cmd_ask(args):
                 
                 messages.append({"role": "user", "content": query})
                 
-                # Start thinking animation
-                thinking = ThinkingAnimation()
-                thinking.start()
-                
-                try:
+                # Start thinking animation (hides all output)
+                with ThinkingAnimation():
                     response = agent.run(messages.copy())
-                finally:
-                    # Stop animation
-                    thinking.stop()
                 # Remove images from response for CLI (markdown image syntax: ![alt](url))
                 response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
                 # Remove image sections and references
@@ -261,15 +287,9 @@ def cmd_ask(args):
         try:
             messages = [{"role": "user", "content": query}]
             
-            # Start thinking animation
-            thinking = ThinkingAnimation()
-            thinking.start()
-            
-            try:
+            # Start thinking animation (hides all output)
+            with ThinkingAnimation():
                 response = agent.run(messages)
-            finally:
-                # Stop animation
-                thinking.stop()
             # Remove images from response for CLI (markdown image syntax: ![alt](url))
             response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
             # Remove image sections and references
