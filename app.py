@@ -37,23 +37,38 @@ except Exception as e:
     pass
 
 # Now import knowledge_base (after Qdrant env vars are set)
+# Import knowledge_base first (it's needed by agent)
+try:
+    from knowledge_base import collection
+except (KeyError, ImportError, AttributeError, Exception) as e:
+    logger.warning(f"Failed to import knowledge_base: {e}")
+    # Create a minimal fallback collection
+    class FallbackCollection:
+        def count(self):
+            return 0
+    collection = FallbackCollection()
+
 # Import agent with warnings suppressed (like in primbot_cli.py)
 import warnings
+PrimAgent = None
 try:
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=RuntimeWarning)
         warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
         from agent import PrimAgent
 except (KeyError, ImportError, AttributeError, Exception) as e:
-    # Log the error but don't raise - allow app to continue with graceful degradation
-    logger.warning(f"Failed to import PrimAgent: {e}")
+    # Log the error with more details
+    import traceback
+    error_details = traceback.format_exc()
+    logger.error(f"Failed to import PrimAgent: {e}")
+    logger.error(f"Traceback: {error_details}")
     # Define a minimal fallback class to prevent app crash
     class PrimAgent:
         def __init__(self, *args, **kwargs):
+            self.error = True
             pass
         def run(self, messages):
-            return "⚠️ Erreur: Impossible d'importer l'agent. Veuillez vérifier les logs pour plus de détails."
-from knowledge_base import collection
+            return "⚠️ **Erreur d'import de l'agent**\n\nL'agent n'a pas pu être importé correctement. Veuillez vérifier:\n1. Que toutes les dépendances sont installées\n2. Que les secrets Streamlit sont correctement configurés\n3. Les logs pour plus de détails."
 from storage_local import get_storage
 import json
 from pathlib import Path
