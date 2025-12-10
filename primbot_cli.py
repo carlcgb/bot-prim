@@ -107,6 +107,11 @@ class ThinkingAnimation:
         
         # Disable logging output during thinking
         import logging
+        import os
+        # Suppress Google ALTS warnings
+        os.environ['GRPC_VERBOSITY'] = 'ERROR'
+        os.environ['GLOG_minloglevel'] = '2'
+        
         root_logger = logging.getLogger()
         self.original_logging_handlers = root_logger.handlers[:]
         # Remove all handlers temporarily
@@ -115,6 +120,10 @@ class ThinkingAnimation:
         # Add a null handler
         null_handler = logging.NullHandler()
         root_logger.addHandler(null_handler)
+        
+        # Also suppress warnings from specific modules
+        import warnings
+        warnings.filterwarnings('ignore')
         
         # Start animation
         self.stop_event.clear()

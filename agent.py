@@ -1,7 +1,11 @@
 try:
-    from duckduckgo_search import DDGS
-except ImportError:
     from ddgs import DDGS
+except ImportError:
+    # Fallback for old package name
+    try:
+        from duckduckgo_search import DDGS
+    except ImportError:
+        DDGS = None
 from knowledge_base import query_knowledge_base
 import json
 import logging
@@ -82,6 +86,7 @@ class PrimAgent:
             'imap': ['imap', 'réception'],
             'pop': ['pop', 'pop3'],
             'user': ['utilisateur', 'usager', 'user'],
+            'candidate': ['candidat', 'candidats', 'utilisateur', 'user'],
             'password': ['mot de passe', 'mdp'],
             'profile': ['profil'],
             'settings': ['paramètres', 'configuration'],
@@ -89,6 +94,16 @@ class PrimAgent:
             'where': ['où', 'comment accéder', 'comment aller'],
             'how': ['comment', 'procédure', 'étapes', 'faire']
         }
+        
+        # Special handling for candidate/user creation queries
+        if any(term in query_lower for term in ['candidat', 'candidate', 'utilisateur', 'user']):
+            if any(term in query_lower for term in ['créer', 'create', 'ajouter', 'nouveau', 'faire']):
+                # Add specific document search terms for user/candidate creation
+                expanded.append('dlg103')
+                expanded.append('dlg103.html')
+                expanded.append('créer utilisateur affecter groupe')
+                expanded.append('nouveau utilisateur')
+                expanded.append('ajouter utilisateur')
         
         # Check for document IDs (like dlg103) in query
         import re
@@ -142,10 +157,10 @@ class PrimAgent:
             # Search with more results initially to filter later
             all_results = []
             
-            # Collect results from multiple queries (increased to 3 for better coverage)
+            # Collect results from multiple queries (increased to 4 for better coverage)
             seen_ids = set()
             # Prioritize original query, then try variations
-            for search_query in search_queries[:3]:  # Increased to 3 queries for better coverage
+            for search_query in search_queries[:4]:  # Increased to 4 queries for better coverage
                 try:
                     query_results = query_knowledge_base(search_query, n_results=8)  # Reduced for speed
                     if query_results and query_results.get('documents') and query_results['documents'][0]:
