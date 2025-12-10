@@ -11,7 +11,6 @@ warnings.filterwarnings('ignore', message='.*ALTS.*')
 
 from knowledge_base import query_knowledge_base
 import json
-from urllib.parse import urljoin
 
 import google.generativeai as genai
 from google.protobuf.json_format import MessageToDict
@@ -47,7 +46,7 @@ IMPORTANT:
 - Si la première recherche ne donne pas de résultats satisfaisants, essaie des variantes de la requête
 - Combine les informations de plusieurs résultats pour donner une réponse complète
 - Cite toujours les sources (URLs) dans ta réponse finale
-- Les résultats incluent des scores de pertinence et des captures d'écran quand disponibles""",
+- Les résultats incluent des scores de pertinence et des liens directs vers la documentation""",
                             parameters=genai.protos.Schema(
                                 type=genai.protos.Type.OBJECT,
                                 properties={
@@ -160,7 +159,6 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
             
             # Build detailed context with relevance scores (optimized)
             context_parts = []
-            all_images = []  # Collect all images from results
             seen_urls = set()  # Track unique URLs to avoid duplicates
             
             context_parts.append(f"📚 **Résultats de recherche** (requête: \"{query}\")\n")
@@ -188,56 +186,6 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                 # Limit document length to avoid token limits
                 doc_content = doc[:8000] if len(doc) > 8000 else doc
                 
-                # Extract images from metadata with enhanced context
-                images_json = metadatas[i].get('images', '') if i < len(metadatas) else ''
-                if images_json:
-                    try:
-                        images = json.loads(images_json)
-                        for img in images:
-                            # Convert relative URLs to absolute URLs immediately
-                            img_url = img.get('url', '')
-                            original_url = img_url
-                            
-                            if img_url and not img_url.startswith('http'):
-                                # Convert relative URL to absolute using document URL
-                                base_url = source if source.startswith('http') else 'https://aide.primlogix.com/prim/fr/5-8/'
-                                
-                                # Handle ./ prefix - urljoin doesn't work well with it
-                                if img_url.startswith('./'):
-                                    img_url = img_url[2:]  # Remove ./ prefix
-                                elif img_url.startswith('/'):
-                                    # Absolute path from domain root
-                                    base_url = 'https://aide.primlogix.com'
-                                
-                                # Use urljoin to combine
-                                img_url = urljoin(base_url, img_url)
-                                
-                                # Final check - ensure it's absolute (urljoin should work, but double-check)
-                                if not img_url.startswith('http'):
-                                    # Fallback: construct manually
-                                    if base_url.endswith('/'):
-                                        img_url = base_url + img_url.lstrip('/')
-                                    else:
-                                        img_url = base_url + '/' + img_url.lstrip('/')
-                                
-                                # CRITICAL: Update the URL in the dict BEFORE adding to all_images
-                                img['url'] = img_url
-                            
-                            # Use the (now absolute) URL for deduplication
-                            if img_url not in seen_urls:
-                                seen_urls.add(img_url)  # Use absolute URL for deduplication
-                                # Add document context to image for better understanding
-                                img_with_context = img.copy()
-                                img_with_context['document_title'] = title
-                                img_with_context['document_url'] = source  # URL of the document page
-                                img_with_context['source_url'] = img.get('source_url', source)  # Source URL from scraper (page where image was found)
-                                img_with_context['relevance_score'] = relevance_score
-                                img_with_context['url'] = img_url  # Ensure absolute URL
-                                all_images.append(img_with_context)
-                    except Exception as e:
-                        logger.debug(f"Error parsing images: {e}")
-                        pass
-                
                 # Build detailed source info with clickable link
                 # Limit document content to avoid token limits (max 8000 chars per document)
                 doc_content = doc[:8000] if len(doc) > 8000 else doc
@@ -263,8 +211,6 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
             
             # Add summary statistics with links to sources
             response_text += f"\n\n**📊 Résumé:** {len(docs)} document(s) trouvé(s)"
-            if all_images:
-                response_text += f", {len(all_images)} image(s) associée(s)"
             
             # Add direct links section for easy access
             response_text += "\n\n**🔗 Liens directs vers la documentation:**\n"
@@ -276,252 +222,6 @@ Une fois initialisée, je pourrai rechercher dans la documentation pour vous aid
                     if source and source not in seen_source_urls:
                         seen_source_urls.add(source)
                         response_text += f"- [{title}]({source})\n"
-            
-            # Add image URLs at the end in a special format that can be parsed
-            # Filter and prioritize images by relevance score
-            if all_images:
-                # Remove duplicates while preserving order (most relevant first)
-                unique_images = []
-                seen_img_urls = set()
-                for img in all_images:
-                    if img['url'] not in seen_img_urls:
-                        seen_img_urls.add(img['url'])
-                        unique_images.append(img)
-                
-                # Filter images by relevance score AND ensure they're real screenshots (not icons/logos)
-                # Images from documents with relevance_score >= 40% are considered relevant
-                relevant_images = []
-                for img in unique_images:
-                    relevance_score = img.get('relevance_score')
-                    
-                    # Skip if relevance is too low
-                    if relevance_score is not None and relevance_score < 40:
-                        continue
-                    
-                    # STRICT filtering: ensure it's a real screenshot, not an icon/logo/arrow/emoji
-                    img_url = img.get('url', '').lower()
-                    img_description = (img.get('description', '') + ' ' + img.get('alt', '') + ' ' + img.get('title', '')).lower()
-                    
-                    # Check dimensions if available - exclude small images and square icon formats
-                    img_width = img.get('width')
-                    img_height = img.get('height')
-                    
-                    # Exclude small images (likely icons) - increased threshold
-                    if img_width and img_width < 200:  # Increased from 150 to 200
-                        continue  # Too small, likely an icon
-                    if img_height and img_height < 200:  # Increased from 150 to 200
-                        continue  # Too small, likely an icon
-                    
-                    # Exclude square and near-square icon formats - icons are often perfect squares or near-squares
-                    if img_width and img_height and img_width > 0 and img_height > 0:
-                        ratio = max(img_width, img_height) / min(img_width, img_height)
-                        
-                        # Exclude perfect squares
-                        if img_width == img_height:  # It's a perfect square
-                            # Common icon square sizes to exclude
-                            common_icon_sizes = [16, 20, 24, 32, 40, 48, 50, 56, 60, 63, 64, 72, 80, 96, 100, 128, 150, 200, 250]
-                            if img_width in common_icon_sizes:
-                                continue  # Square icon format, exclude
-                            # Also exclude any square smaller than 300px (likely an icon)
-                            elif img_width < 300:
-                                continue  # Small square, likely an icon
-                        
-                        # Exclude near-square images (ratio close to 1.0) that are not very large
-                        # Real screenshots are significantly rectangular (ratio > 1.2 or < 0.8)
-                        if 0.9 <= ratio <= 1.1:  # Within 10% of square
-                            if img_width < 300:  # And not very large
-                                continue  # Near-square small image, likely an icon
-                    
-                    # Exclude common icon/logo/arrow/emoji patterns in filename
-                    icon_patterns = [
-                        'icon', 'logo', 'button', 'arrow', 'chevron', 'fleche', 'flèche',
-                        'nav', 'menu', 'emoji', 'icone', 'icône', 'bouton',
-                        '40x40', '32x32', '24x24', '16x16', '20x20', '30x30', '48x48',
-                        '50x50', '56x56', '60x60', '63x63', '64x64', '72x72', '80x80',
-                        '96x96', '100x100', '128x128',
-                        'favicon', 'sprite', 'svg', 'ico',
-                        'up', 'down', 'left', 'right', 'next', 'prev', 'previous',
-                        'haut', 'bas', 'gauche', 'droite', 'suivant', 'precedent',
-                        # Specific icon types
-                        'lightbulb', 'ampoule', 'bulb', 'lamp', 'lampe',
-                        'placeholder', 'place-holder', 'generic', 'generique',
-                        # Additional icon patterns
-                        'speech', 'bubble', 'bulle', 'chat', 'message', 'messaging',
-                        'double', 'head', 'resize', 'pane', 'navigation',
-                        'clapperboard', 'film', 'camera', 'photo-icon',
-                        # Emoji and icon patterns
-                        'magnifying', 'glass', 'loupe', 'search-icon', 'search-icon',
-                        'thumbs', 'thumbs-up', 'thumbs-down', 'thumbsup', 'thumbsdown',
-                        'thumb-up', 'thumb-down', 'like', 'dislike', 'feedback',
-                        'pouce', 'pouce-haut', 'pouce-bas', 'emoji', 'emoticon',
-                        'icon-', '-icon', 'icn-', '-icn',
-                        # Document/folder icons (NOT screenshots)
-                        'document', 'doc', 'file', 'folder', 'dossier', 'cv', 'resume',
-                        'pdf-icon', 'word-icon', 'excel-icon', 'file-icon', 'folder-icon',
-                        'document-icon', 'icone-document', 'icone-dossier', 'icone-fichier'
-                        # Person/people icons
-                        'person', 'people', 'user', 'utilisateur', 'profil', 'profile',
-                        'head', 'shoulder', 'silhouette', 'avatar', 'tête', 'épaules',
-                        # Checkmark/verification icons
-                        'checkmark', 'check', 'verification', 'vérification', 'tick', 'coche',
-                        'check-icon', 'icone-check', 'icone-verification',
-                        # Remuneration/payment icons
-                        'remuneration', 'rémunération', 'payment', 'paiement', 'money', 'argent',
-                        'cash', 'hand-money', 'main-argent', 'salary', 'salaire'
-                    ]
-                    
-                    # Additional check: Exclude images with icon-like descriptions
-                    img_description_lower = img_description.lower()
-                    icon_description_patterns = [
-                        'speech bubble', 'bulle de dialogue', 'liens utiles',
-                        'double arrow', 'double-headed', 'flèche double',
-                        'resize', 'redimensionner', 'pane', 'panneau',
-                        'clapperboard', 'clap', 'film icon', 'icone film',
-                        'magnifying glass', 'loupe', 'search icon', 'icone recherche',
-                        # Feedback icons (thumbs up/down) - STRICT FILTERING
-                        'thumbs up', 'thumbs down', 'thumbs-up', 'thumbs-down',
-                        'thumbsup', 'thumbsdown', 'thumb up', 'thumb down',
-                        'like button', 'dislike button', 'feedback button',
-                        'pouce', 'pouce-haut', 'pouce-bas', 'pouce vers le haut', 'pouce vers le bas',
-                        'like icon', 'dislike icon', 'feedback icon', 'icone feedback',
-                        'icone pouce', 'icone like', 'icone dislike',
-                        'emoji', 'emoticon',
-                        'camera icon', 'icone camera', 'photo icon', 'icone photo',
-                        # Document/folder icons (NOT screenshots) - STRICT FILTERING
-                        'document icon', 'folder icon', 'file icon', 'dossier icon',
-                        'cv icon', 'resume icon', 'document with', 'folder with',
-                        'document cv', 'icone document', 'icone dossier', 'icone fichier',
-                        'icone cv', 'document avec loupe', 'dossier avec loupe',
-                        'document with magnifying', 'folder with magnifying'
-                        # Person/people icons
-                        'person icon', 'icone personne', 'icone utilisateur', 'icone profil',
-                        'silhouette', 'avatar', 'head icon', 'shoulder icon', 'tête', 'épaules',
-                        'person outline', 'silhouette de personne', 'icone de personne',
-                        # Checkmark/verification icons
-                        'checkmark', 'check icon', 'icone check', 'icone vérification',
-                        'tick', 'coche', 'verification icon', 'icone verification',
-                        'green checkmark', 'coche verte', 'checkmark icon',
-                        # Remuneration/payment icons
-                        'remuneration', 'rémunération', 'payment icon', 'icone paiement',
-                        'money icon', 'icone argent', 'hand money', 'main argent',
-                        'salary icon', 'icone salaire', 'hand holding money',
-                        'main tenant argent', 'icone rémunération'
-                    ]
-                    if any(pattern in img_description_lower for pattern in icon_description_patterns):
-                        # Only allow if explicitly a screenshot
-                        if not any(x in img_url or x in img_description_lower for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog', 'application', 'logiciel']):
-                            continue
-                    if any(pattern in img_url for pattern in icon_patterns):
-                        # Only allow if it's EXPLICITLY a screenshot
-                        if not any(x in img_url for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'window', 'dialog', 'images/']):
-                            continue
-                    
-                    # ULTRA-STRICT REQUIREMENT: Must be a REAL interface screenshot, NOT an icon
-                    # Exclude document/folder icons with magnifying glass (common icon pattern)
-                    document_icon_patterns = ['document', 'doc', 'file', 'folder', 'dossier', 'cv', 'resume']
-                    has_document_icon = any(pattern in img_url.lower() or pattern in img_description_lower for pattern in document_icon_patterns)
-                    has_magnifying = 'magnifying' in img_url.lower() or 'loupe' in img_url.lower() or 'magnifying' in img_description_lower or 'loupe' in img_description_lower
-                    
-                    # If it's a document/folder icon with magnifying glass, it's NOT a screenshot
-                    if has_document_icon and has_magnifying:
-                        continue  # Definitely an icon, not a screenshot
-                    
-                    # STRICT REQUIREMENT: Must have screenshot-related keywords in URL or description
-                    # AND must be in /images/ directory OR have explicit screenshot keywords
-                    # AND must NOT be square/near-square (real screenshots are rectangular)
-                    screenshot_keywords = ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 
-                                         'affichage', 'window', 'dialog', 'images/', 'application', 'logiciel',
-                                         'onglet', 'tab', 'menu', 'bouton', 'button', 'champ', 'field']
-                    has_screenshot_keyword = any(keyword in img_url or keyword in img_description for keyword in screenshot_keywords)
-                    
-                    # Additional check: Must be in /images/ directory OR have explicit screenshot indicators
-                    is_in_images_dir = '/images/' in img_url
-                    has_explicit_screenshot = any(x in img_url or x in img_description for x in ['screenshot', 'capture', 'interface', 'fenetre', 'ecran', 'affichage', 'application', 'logiciel', 'onglet', 'tab'])
-                    
-                    # Additional check: If in /images/ directory, must NOT be square/near-square
-                    if is_in_images_dir and img_width and img_height and img_width > 0 and img_height > 0:
-                        ratio = max(img_width, img_height) / min(img_width, img_height)
-                        # Exclude square/near-square images even from /images/ (likely icons)
-                        if 0.9 <= ratio <= 1.1 and img_width < 400:  # Near-square and not very large
-                            continue  # Likely an icon, not a screenshot
-                    
-                    # Only include if it meets strict criteria AND is NOT a document/folder icon
-                    if not (has_screenshot_keyword and (is_in_images_dir or has_explicit_screenshot)):
-                        continue
-                    
-                    # Final check: Exclude if it looks like a document/folder icon (even if in /images/)
-                    if has_document_icon and not has_explicit_screenshot:
-                        continue  # Document/folder icons are NOT interface screenshots
-                    
-                    # Exclude SVG files (almost always icons/vectors)
-                    if img_url.endswith('.svg') or img_url.endswith('.ico'):
-                        continue
-                    
-                    # Include this image - it's relevant and looks like a real screenshot
-                    relevant_images.append(img)
-                
-                # Sort by relevance score (highest first), then by document order
-                relevant_images.sort(key=lambda x: (
-                    x.get('relevance_score', 0) if x.get('relevance_score') is not None else 0
-                ), reverse=True)
-                
-                # Limit to top 2-3 most relevant images to keep responses focused
-                # Maximum 3 images per response for clarity and relevance
-                max_images = min(3, len(relevant_images))
-                top_images = relevant_images[:max_images]
-                
-                # Instead of images, add URLs to relevant documentation pages
-                if top_images:
-                    # Collect unique source URLs from images
-                    source_urls = {}
-                    for img in top_images:
-                        source_url = img.get('document_url') or img.get('source_url') or ''
-                        if source_url and source_url not in source_urls:
-                            doc_title = img.get('document_title', 'Aide en ligne PrimLogix')
-                            source_urls[source_url] = doc_title
-                    
-                    # Add section with links to relevant pages
-                    if source_urls:
-                        links_section = "\n\n---\n\n## 🔗 Pages pertinentes de l'aide en ligne\n\n"
-                        links_section += "*Consultez ces pages pour voir les captures d'écran et les instructions détaillées :*\n\n"
-                        
-                        for url, title in source_urls.items():
-                            links_section += f"- [{title}]({url})\n"
-                        
-                        links_section += "\n---\n\n"
-                        response_text += links_section
-            
-            # FINAL FIX: Replace any remaining relative URLs in the ENTIRE response text with absolute URLs
-            # This must be done AFTER all text is assembled
-            import re
-            def replace_relative_url(match):
-                alt = match.group(1)
-                url = match.group(2).strip()
-                
-                if url and not url.startswith('http'):
-                    # Convert to absolute
-                    base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
-                    
-                    # Handle ./ prefix
-                    if url.startswith('./'):
-                        url = url[2:]  # Remove ./ prefix
-                    elif url.startswith('/'):
-                        # Absolute path from root
-                        base_url = 'https://aide.primlogix.com'
-                    
-                    # Use urljoin
-                    url = urljoin(base_url, url)
-                    
-                    # Final check
-                    if not url.startswith('http'):
-                        # Manual construction as last resort
-                        url = base_url.rstrip('/') + '/' + url.lstrip('/')
-                
-                return f"![{alt}]({url})"
-            
-            # Replace all relative image URLs in the ENTIRE response
-            image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
-            response_text = re.sub(image_pattern, replace_relative_url, response_text)
             
             return response_text
         except ImportError as e:
@@ -650,26 +350,24 @@ TON RÔLE (Support Client - Utilisateurs NON TECHNIQUES):
 - **Expliquer de manière TRÈS SIMPLE** - utilise un langage clair, évite TOUT jargon technique
 - **Fournir des solutions PRATIQUES et ACTIONNABLES** - chaque étape doit être si claire qu'un débutant peut la suivre
 - **Citer TOUJOURS les sources** avec des liens directs vers les sections pertinentes de l'aide en ligne
-- **Guider visuellement** - utilise les captures d'écran pour montrer exactement où cliquer et quoi faire
 - **NE PAS SAUTER D'ÉTAPES** - explique chaque clic, chaque menu, chaque champ
 
 STYLE DE RÉPONSE (Support Client - OBLIGATOIRE pour utilisateurs NON TECHNIQUES):
 1. **Accueil et empathie** : Commence par accueillir l'utilisateur et montrer que tu comprends son problème
 2. **Confirmation du problème** : Reformule brièvement le problème pour confirmer ta compréhension
 3. **Solution ULTRA-DÉTAILLÉE** : Utilise des titres (##, ###), listes à puces, et sections bien organisées
-4. **Étapes numérotées TRÈS DÉTAILLÉES** : 
+4. **Étapes numérotées COMPACTES mais COMPLÈTES** : 
    - **TOUJOURS commencer par "Étape 1"** - ne jamais sauter l'étape 1
    - **Numéroter de manière SÉQUENTIELLE** : Étape 1, Étape 2, Étape 3, Étape 4, etc. (pas de saut de numéro)
    - **Utiliser le MÊME format pour TOUTES les étapes** : `### Étape X:` (avec ###, pas ## ou ####)
-   - **Toutes les étapes doivent avoir le MÊME niveau de détail** - ne pas faire une étape plus grande que les autres
-   - Chaque étape doit être si claire qu'un débutant peut la suivre
-   - Inclus TOUS les clics nécessaires (ex: "Cliquez sur le menu 'Fichier' en haut à gauche")
-   - Explique TOUS les chemins de navigation (ex: "Allez dans Menu > Paramètres > Utilisateurs")
-   - Décris TOUS les champs à remplir avec leurs noms exacts
-   - Indique ce que l'utilisateur devrait voir à chaque étape
-   - Ne saute AUCUNE étape, même si elle semble évidente
-5. **Guidage visuel avec images** : Référence explicitement les captures d'écran (ex: "Dans l'image 1 ci-dessus, vous pouvez voir...") et explique exactement où cliquer avec des descriptions précises
-6. **Détails pratiques COMPLETS** : 
+   - **Toutes les étapes doivent être COHÉRENTES et LIÉES** - chaque étape doit logiquement suivre la précédente
+   - **Format compact** : Chaque sous-étape en 1 phrase claire, pas de listes imbriquées excessives
+   - **Cohérence** : Assure-toi que chaque étape s'enchaîne logiquement avec la précédente
+   - Inclus TOUS les clics nécessaires mais de manière concise (ex: "Cliquez sur Menu 'Fichier' > 'Nouveau'")
+   - Décris les champs avec leurs noms exacts mais de manière compacte
+   - Indique brièvement ce que l'utilisateur devrait voir après chaque étape
+   - Ne saute AUCUNE étape logique, mais sois concis
+5. **Détails pratiques COMPLETS** : 
    - Noms de champs exacts avec leur emplacement
    - Chemins de navigation complets (Menu > Sous-menu > Option)
    - Options à sélectionner avec leur emplacement exact
@@ -680,123 +378,58 @@ STYLE DE RÉPONSE (Support Client - OBLIGATOIRE pour utilisateurs NON TECHNIQUES
 9. **Ton amical et professionnel** : Sois courtois, patient et encourageant
 10. **Exemples concrets** : Donne des exemples de valeurs à entrer si applicable
 
-STRUCTURE D'UNE RÉPONSE IDÉALE (Support Client - ULTRA-DÉTAILLÉE):
+STRUCTURE D'UNE RÉPONSE IDÉALE (Support Client - COMPACTE mais COMPLÈTE):
 ```
 ## 👋 Bonjour !
 
-Je comprends que vous rencontrez [problème]. Je vais vous guider étape par étape, de manière très détaillée, pour résoudre cela. Ne vous inquiétez pas, je vais tout vous expliquer clairement.
+Je comprends que vous voulez [action/problème]. Voici comment procéder :
 
 ## 📋 Compréhension du Problème
 
-[Reformulation du problème pour confirmer la compréhension]
+[Reformulation brève du problème - 2-3 phrases maximum]
 
-## 🔧 Solution Étape par Étape (Guide Complet)
+## 🔧 Solution Étape par Étape
 
-**⚠️ RÈGLE ABSOLUE - NUMÉROTATION DES ÉTAPES (OBLIGATOIRE) :**
-- **TU DOIS TOUJOURS COMMENCER PAR "### Étape 1:"** - C'EST OBLIGATOIRE, JAMAIS DE SAUT
-- **TU DOIS NUMÉROTER DE 1, 2, 3, 4... SÉQUENTIELLEMENT** - JAMAIS COMMENCER PAR ÉTAPE 2, 3, 4, etc.
-- **TOUTES les étapes utilisent EXACTEMENT le même format** : `### Étape X:` (avec ###, JAMAIS ## ou ####)
-- **TOUTES les étapes ont le MÊME niveau de détail** - aucune étape ne doit être plus grande que les autres
-- **JAMAIS de titres géants** (##) pour certaines étapes - toutes au même niveau (###)
-- **Si tu commences par Étape 4 ou autre, TU AS FAIT UNE ERREUR - RECOMMENCE PAR ÉTAPE 1**
+### Étape 1: [Action concrète - Titre clair et concis]
+**Objectif :** [Explication brève de l'objectif - 1 phrase]
 
-### Étape 1: [Action concrète - Titre clair]
-**Ce que vous allez faire :** [Explication simple de l'objectif de cette étape]
+1. **Localisez** [élément] : [Emplacement précis en 1 phrase, ex: "Menu 'Fichier' en haut à gauche"]
+2. **Cliquez sur** [élément] : [Action précise en 1 phrase, ex: "Bouton 'Nouveau' pour ouvrir la fenêtre"]
+3. **Dans la fenêtre qui s'ouvre** : [Ce que vous devriez voir en 1 phrase]
+4. **Remplissez le champ** [Nom] : [Valeur à entrer, ex: "Nom complet de l'employé"]
+5. **Cliquez sur** [Bouton final] : [Ex: "Bouton 'Enregistrer' en bas à droite"]
 
-1. **Localisez** [élément à trouver]
-   - **Où le trouver** : [Description précise de l'emplacement, ex: "En haut à gauche de l'écran, vous verrez un menu avec plusieurs options"]
-   - **À quoi ça ressemble** : [Description visuelle, ex: "Un bouton bleu avec le texte 'Nouveau'"]
-   - **Si vous ne le voyez pas** : [Alternative ou aide supplémentaire]
+**Résultat attendu :** [Ce qui devrait se passer après cette étape - 1 phrase]
 
-2. **Cliquez sur** [élément]
-   - **Action précise** : [Ex: "Cliquez une fois avec le bouton gauche de la souris sur le bouton 'Nouveau'"]
-   - **Ce qui devrait se passer** : [Ex: "Une nouvelle fenêtre devrait s'ouvrir"]
+### Étape 2: [Action suivante - Format compact identique]
+**Objectif :** [Explication brève - 1 phrase]
 
-3. **Dans la nouvelle fenêtre/écran qui s'ouvre** :
-   - **Vous devriez voir** : [Description de ce qui apparaît]
-   - **Cherchez** : [Élément suivant à trouver]
-   - **Localisez** : [Emplacement précis]
+1. [Action 1 en 1 phrase]
+2. [Action 2 en 1 phrase]
+3. [Action 3 en 1 phrase si nécessaire]
 
-4. **Remplissez le champ** [Nom du champ]
-   - **Où se trouve le champ** : [Ex: "En haut de la fenêtre, dans la section 'Informations de base'"]
-   - **Nom exact du champ** : [Ex: "Nom complet"]
-   - **Que mettre dedans** : [Ex: "Tapez le nom complet de l'employé, par exemple 'Jean Dupont'"]
-   - **Comment le remplir** : [Ex: "Cliquez dans le champ, puis tapez directement"]
+**Résultat attendu :** [Ce qui devrait se passer - 1 phrase]
 
-5. **Répétez pour** [autres champs si nécessaire]
-   - [Détails pour chaque champ]
-
-6. **Une fois tous les champs remplis** :
-   - **Cherchez le bouton** [Nom du bouton, ex: "Enregistrer"]
-   - **Où il se trouve** : [Ex: "En bas à droite de la fenêtre"]
-   - **Cliquez dessus** : [Ex: "Cliquez une fois sur le bouton 'Enregistrer'"]
-   - **Ce qui devrait se passer** : [Ex: "Un message de confirmation devrait apparaître"]
-
-### Étape 2: [Action suivante - Aussi détaillée]
-[Suivre le même format ultra-détaillé avec le même niveau de titre ###]
-
-### Étape 3: [Si nécessaire]
-[Suivre le même format ultra-détaillé avec le même niveau de titre ###]
-
-### Étape 4: [Si nécessaire]
-[Suivre le même format ultra-détaillé avec le même niveau de titre ###]
+### Étape 3: [Si nécessaire - Format compact identique]
+[Suivre le même format compact]
 ...
-
-## 📸 Guide Visuel (Si images disponibles)
-
-**Image 1** : [Description de ce que montre l'image]
-- "Dans l'image ci-dessus, vous pouvez voir [description précise de l'interface]"
-- "Repérez le bouton [nom] qui se trouve [emplacement précis dans l'image]"
-- "Cliquez exactement sur ce bouton"
-
-**Image 2** : [Description]
-- "Après avoir cliqué, vous devriez voir cette nouvelle fenêtre"
-- "Dans cette fenêtre, localisez le champ [nom] qui se trouve [emplacement]"
-
-## ⚠️ Points Importants à Retenir
-
-- [Point important 1]
-- [Point important 2]
-- [Piège à éviter]
 
 ## ✅ Vérification
 
-Après avoir suivi toutes ces étapes, vous devriez voir [résultat attendu très précis].
+Après ces étapes, vous devriez voir [résultat attendu].
 
-**Vérifiez que :**
-- ✅ [Vérification 1]
-- ✅ [Vérification 2]
-- ✅ [Vérification 3]
+**Le problème est-il résolu ?** Si non, dites-moi à quelle étape vous êtes bloqué(e).
 
-**Le problème est-il résolu ?** 
-- Si **OUI** : Parfait ! N'hésitez pas si vous avez d'autres questions.
-- Si **NON** : Dites-moi exactement à quelle étape vous êtes bloqué(e) et ce que vous voyez à l'écran. Je vous aiderai davantage.
+## 🔗 Documentation
 
-## 🔗 Documentation Complémentaire
-
-Pour plus de détails, consultez :
-- [Lien direct vers la section pertinente](URL) - [Description de ce que contient cette page]
-- [Lien vers la page complète](URL) - [Description]
+- [Lien vers la section pertinente](URL)
 ```
 
 QUAND TU UTILISES LA BASE DE CONNAISSANCES:
 - Analyse TOUS les résultats de recherche fournis en profondeur
-- Combine les informations de plusieurs sources pour une réponse COMPLÈTE et ULTRA-DÉTAILLÉE
+- Combine les informations de plusieurs sources pour une réponse COMPLÈTE et COMPACTE
 - **INCLUS TOUJOURS DES LIENS DIRECTS** vers les pages/sections pertinentes de l'aide en ligne
-- **UTILISE LES CAPTURES D'ÉCRAN INTELLIGEMMENT** (maximum 2-3 images, SEULEMENT si pertinentes) :
-  * **Place les images au bon endroit** : Insère-les dans la section pertinente de ta réponse, pas à la fin
-  * **Référence explicitement** : "Dans l'image ci-dessous, vous pouvez voir [description TRÈS précise de chaque élément visible]"
-  * **Guide visuellement** : "Cliquez sur le bouton visible dans l'image (en haut à droite, marqué 'Enregistrer', avec une icône de disquette)"
-  * **Explique le contexte** : Décris ce que montre l'image et pourquoi c'est important pour résoudre le problème
-  * **Intègre dans les étapes** : Si une image montre une étape spécifique, place-la juste avant ou après cette étape
-  * **Décris TOUS les éléments visibles** : Nomme chaque bouton, champ, menu visible dans l'image
-  * **Limite-toi à 2-3 images maximum** - choisis UNIQUEMENT les images qui montrent vraiment des fenêtres/logiciels, PAS des icônes
-  * **Si aucune image pertinente** : Ne mentionne pas d'images, concentre-toi sur le texte explicatif ultra-détaillé
-
-UTILISATION DES IMAGES POUR GUIDER (2-3 maximum):
-1. **Orientation visuelle** : "Dans l'image 1, vous pouvez voir l'interface complète avec..."
-2. **Instructions précises** : "Cliquez sur le bouton visible dans l'image 2 (en haut à droite, marqué 'Enregistrer')"
-3. **Processus étape par étape** : "Suivez les images dans l'ordre : Image 1 montre l'état initial, Image 2 montre le résultat final"
+- **NE FAIS JAMAIS RÉFÉRENCE AUX IMAGES** - concentre-toi uniquement sur le texte explicatif et les liens vers la documentation
 
 LIENS VERS LA DOCUMENTATION (OBLIGATOIRE):
 - **TOUJOURS inclure des liens cliquables** vers les pages/sections pertinentes de l'aide en ligne
@@ -807,28 +440,18 @@ LIENS VERS LA DOCUMENTATION (OBLIGATOIRE):
 
 IMPORTANT (Support Client - Utilisateurs NON TECHNIQUES):
 - Réponds en français sauf si l'utilisateur demande explicitement en anglais
-- **Sois ULTRA-CLAIR et TRÈS ACCESSIBLE** - utilise un langage simple, évite TOUT jargon technique
-- **Sois EXTRÊMEMENT COMPLET** - donne TOUTES les informations nécessaires, ne saute AUCUNE étape
-- **Assume que l'utilisateur est un débutant** - explique TOUT, même les choses qui semblent évidentes
-- **Sois empathique** - montre que tu comprends la frustration de l'utilisateur
-- **Sois TRÈS actionnable** - chaque étape doit être si claire qu'un débutant peut la suivre sans hésitation
-- **Décris TOUS les clics** : "Cliquez sur le menu 'Fichier' en haut à gauche" (pas juste "Allez dans Fichier")
-- **Décris TOUS les chemins** : "Menu > Paramètres > Utilisateurs" avec explication de chaque niveau
-- **Décris TOUS les champs** : Nom exact, emplacement, ce qu'il faut mettre dedans, comment le remplir
-- **Indique ce qu'on devrait voir** : Après chaque action, dis ce que l'utilisateur devrait voir à l'écran
-- Si tu n'es pas sûr, dis-le honnêtement et propose des pistes de vérification
-- Pour les erreurs, fournis le contexte, les causes possibles, et les solutions étape par étape TRÈS détaillées
-- Utilise TOUJOURS l'outil search_knowledge_base avant de répondre pour avoir des informations à jour
-- **Place les images au bon endroit** : Intègre-les dans le texte pertinent, pas à la fin
-- **Référence les images explicitement** : "Dans l'image ci-dessous, vous pouvez voir [description TRÈS précise]"
-- **Guide visuellement** : Indique exactement où cliquer, quels champs remplir, en utilisant les images avec descriptions précises
-- **Décris TOUS les éléments visibles dans les images** : Nomme chaque bouton, champ, menu visible
-- **Maximum 2-3 images par réponse** - UNIQUEMENT si elles montrent des fenêtres/logiciels réels
-- **Si les images ne sont pas pertinentes** : Ne les mentionne pas, concentre-toi sur le texte explicatif ultra-détaillé
+- **Sois CLAIR et ACCESSIBLE** - langage simple, évite le jargon technique
+- **Sois COMPLET mais COMPACT** - toutes les informations nécessaires, format condensé
+- **Assume que l'utilisateur est un débutant** - explique clairement mais de manière concise
+- **Sois empathique** - montre que tu comprends le problème
+- **COHÉRENCE des étapes** : Chaque étape doit logiquement suivre la précédente, pas d'étapes isolées ou non liées
+- **Format compact** : Chaque sous-étape en 1 phrase claire, pas de listes imbriquées excessives
+- **Décris les clics** : "Cliquez sur Menu 'Fichier' > 'Nouveau'" (format compact)
+- **Décris les champs** : Nom exact et valeur à entrer en 1 phrase
+- **Indique brièvement** ce que l'utilisateur devrait voir après chaque étape
+- Utilise TOUJOURS l'outil search_knowledge_base avant de répondre
 - **TOUJOURS inclure des liens directs** vers les sections pertinentes de l'aide en ligne
-- **Termine par une question** : Demande si le problème est résolu ou si l'utilisateur a besoin d'aide supplémentaire
-- **Donne des exemples concrets** : Si applicable, donne des exemples de valeurs à entrer
-- **Anticipe les problèmes** : Mentionne les erreurs courantes et comment les éviter"""
+- **Termine par une question** : Demande si le problème est résolu"""
             
             model_auto = genai.GenerativeModel(
                 model_name=params_model_name,
@@ -904,18 +527,6 @@ IMPORTANT (Support Client - Utilisateurs NON TECHNIQUES):
                                 # Handle query parameter
                                 query = function_args.get('query', '')
                                 function_result = self.tool_map[function_name](query)
-                                
-                                # Store images from search_kb for later inclusion
-                                if function_name == "search_knowledge_base":
-                                    # Extract images from the function result
-                                    import re
-                                    image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
-                                    extracted_images = re.findall(image_pattern, str(function_result))
-                                    if extracted_images:
-                                        # Store images to add to final response
-                                        if not hasattr(self, '_extracted_images'):
-                                            self._extracted_images = []
-                                        self._extracted_images.extend(extracted_images)
                             else:
                                 function_result = f"Unknown function: {function_name}"
                             
@@ -942,49 +553,6 @@ IMPORTANT (Support Client - Utilisateurs NON TECHNIQUES):
                                 text_parts.append(part.text)
                         if text_parts:
                             final_response = ''.join(text_parts)
-                
-                # Add extracted images to the response if they exist
-                if final_response and hasattr(self, '_extracted_images') and self._extracted_images:
-                    # Remove duplicates while preserving order and convert relative URLs to absolute
-                    seen_images = set()
-                    unique_images = []
-                    base_url = 'https://aide.primlogix.com/prim/fr/5-8/'
-                    
-                    for alt, url in self._extracted_images:
-                        # Convert relative URLs to absolute URLs
-                        if url and not url.startswith('http'):
-                            # Handle ./ prefix - urljoin doesn't work well with it
-                            if url.startswith('./'):
-                                url = url[2:]  # Remove ./ prefix
-                            elif url.startswith('/'):
-                                # Absolute path from domain root
-                                base_url = 'https://aide.primlogix.com'
-                            url = urljoin(base_url, url)
-                            # Final check - ensure it's absolute
-                            if not url.startswith('http'):
-                                # Fallback: construct manually
-                                if base_url.endswith('/'):
-                                    url = base_url + url.lstrip('/')
-                                else:
-                                    url = base_url + '/' + url.lstrip('/')
-                        
-                        if url not in seen_images:
-                            seen_images.add(url)
-                            unique_images.append((alt, url))
-                    
-                    if unique_images:
-                        # Add images section to response (limit to 2-3 maximum)
-                        max_images_display = min(3, len(unique_images))
-                        images_section = "\n\n---\n\n## 📸 Captures d'écran de l'interface\n\n"
-                        for idx, (alt, url) in enumerate(unique_images[:max_images_display], 1):  # Limit to 3 images
-                            alt_text = alt if alt and alt.strip() else f"Capture d'écran {idx}"
-                            # Ensure URL is absolute
-                            if not url.startswith('http'):
-                                url = urljoin(base_url, url)
-                            images_section += f"![{alt_text}]({url})\n\n"
-                        final_response += images_section
-                        # Clear extracted images for next query
-                        self._extracted_images = []
                 
                 if final_response:
                     return final_response

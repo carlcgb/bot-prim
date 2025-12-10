@@ -195,10 +195,12 @@ for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             content = message["content"]
             
-            # Remove images from content and display only text with URLs
+            # Remove images and "Captures d'écran de l'interface" section from content
             import re
             # Remove markdown image syntax: ![alt](url)
             content = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', content)
+            # Remove "Captures d'écran de l'interface" section header and content
+            content = re.sub(r'##\s*📸\s*Captures\s*d\'écran\s*de\s*l\'interface.*?(?=\n##|\n---|$)', '', content, flags=re.IGNORECASE | re.DOTALL)
             # Remove image sections and references
             content = re.sub(r'(?i)(image\s*\d+|capture\s*d\'écran\s*\d+|screenshot\s*\d+)[:：]?\s*[^\n]*\n?', '', content)
             # Clean up multiple empty lines
@@ -245,10 +247,12 @@ if prompt := st.chat_input("Describe the problem..."):
             
             response = agent.run(st.session_state.messages.copy())
             
-            # Remove images from response and display only text with URLs
+            # Remove images and "Captures d'écran de l'interface" section from response
             import re
             # Remove markdown image syntax: ![alt](url)
             response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
+            # Remove "Captures d'écran de l'interface" section header and content
+            response = re.sub(r'##\s*📸\s*Captures\s*d\'écran\s*de\s*l\'interface.*?(?=\n##|\n---|$)', '', response, flags=re.IGNORECASE | re.DOTALL)
             # Remove image sections and references
             response = re.sub(r'(?i)(image\s*\d+|capture\s*d\'écran\s*\d+|screenshot\s*\d+)[:：]?\s*[^\n]*\n?', '', response)
             # Clean up multiple empty lines
@@ -275,13 +279,14 @@ if prompt := st.chat_input("Describe the problem..."):
             # Ajouter les boutons de feedback (thumbs up/down) après la réponse
             if conversation_id:
                 st.markdown("---")
-                col1, col2, col3 = st.columns([1, 1, 20])
+                # Améliorer l'alignement des boutons avec un meilleur espacement
+                col1, col2 = st.columns([1, 1])
                 with col1:
                     thumbs_up_key = f"thumbs_up_{conversation_id}_{len(st.session_state.messages)}"
-                    thumbs_up = st.button("👍", key=thumbs_up_key, help="Cette réponse était utile", use_container_width=True)
+                    thumbs_up = st.button("👍 Utile", key=thumbs_up_key, help="Cette réponse était utile", use_container_width=True)
                 with col2:
                     thumbs_down_key = f"thumbs_down_{conversation_id}_{len(st.session_state.messages)}"
-                    thumbs_down = st.button("👎", key=thumbs_down_key, help="Cette réponse n'était pas utile", use_container_width=True)
+                    thumbs_down = st.button("👎 Pas utile", key=thumbs_down_key, help="Cette réponse n'était pas utile", use_container_width=True)
                 
                 # Gérer le feedback thumbs up
                 if thumbs_up:

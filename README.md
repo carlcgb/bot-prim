@@ -12,9 +12,9 @@ Assistant intelligent en support client pour la documentation PrimLogix avec Gem
 - 🔗 **Liens directs** : URLs vers les pages pertinentes de l'aide en ligne (sans images)
 - 🤖 **Support multi-IA** : Gemini (gratuit) et Ollama (100% gratuit, local)
 - 💻 **Multi-interface** : CLI et interface Web (Streamlit)
-- 🎯 **Réponses orientées support client** : Claires, détaillées, avec guidage visuel
+- 🎯 **Réponses orientées support client** : Compactes, complètes, avec étapes cohérentes et logiquement liées
+- 📝 **Format uniforme** : Toutes les étapes utilisent le même format, numérotées séquentiellement (Étape 1, 2, 3...)
 - 👍👎 **Système de feedback** : Amélioration continue basée sur vos retours
-- 🔗 **Liens directs** : Accès direct aux sections pertinentes de l'aide en ligne
 
 ## 🚀 Installation Rapide
 
@@ -64,8 +64,7 @@ primbot ingest  # 5-10 minutes, une seule fois
 
 **Ce qui se passe :**
 - Scraping de https://aide.primlogix.com/prim/fr/5-8/
-- Extraction du contenu et captures d'écran pertinentes
-- Filtrage automatique des icônes/logos (seules les vraies captures d'écran ≥200px, rectangulaires)
+- Extraction du contenu textuel de la documentation
 - Création de la base de données vectorielle ChromaDB locale
 
 ### 3. Tester le Bot
@@ -150,9 +149,9 @@ GEMINI_API_KEY = "votre_cle_api"
 
 ### Réponses Orientées Support Client
 - 👋 **Accueil empathique** : Ton amical et professionnel
-- 📋 **Structure claire** : Étapes numérotées avec détails pratiques
-- 📸 **Guidage visuel** : Références explicites aux captures d'écran
+- 📋 **Structure claire** : Étapes numérotées compactes mais complètes (format uniforme)
 - 🔗 **Liens directs** : Accès immédiat aux sections pertinentes de l'aide en ligne
+- 🔢 **Cohérence** : Chaque étape suit logiquement la précédente, pas d'étapes isolées
 - ✅ **Vérification** : Demande si le problème est résolu
 
 ## 💡 Conseils pour Obtenir les Meilleures Réponses
@@ -219,7 +218,7 @@ bot-prim/
 
 - 🎯 **Objectif** : Simplifier l'accès à la documentation PrimLogix avec un support client de qualité
 - 🆓 **100% gratuit** : Aucune carte de crédit, plan gratuit généreux
-- 📸 **Images pertinentes** : Filtrage intelligent des captures d'écran (seulement fenêtres/logiciels réels)
+- 📝 **Réponses optimisées** : Format compact, étapes cohérentes, liens directs vers la documentation
 - 💻 **Multi-plateforme** : CLI et interface web
 - 🔄 **Amélioration continue** : Système de feedback pour s'améliorer constamment
 

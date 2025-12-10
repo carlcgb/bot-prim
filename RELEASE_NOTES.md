@@ -45,19 +45,24 @@ Si la commande n'est pas trouvée, consultez [docs/CLI_INSTALLATION.md](https://
 ### ✨ Changements Majeurs
 
 - 🔗 **URLs au lieu d'images** - Les réponses incluent maintenant uniquement des liens directs vers les pages pertinentes de l'aide en ligne, sans afficher d'images
+- 📝 **Réponses compactes** - Format optimisé : chaque sous-étape en 1 phrase claire, pas de verbosité excessive
+- 🔢 **Cohérence des étapes** - Chaque étape suit logiquement la précédente, pas d'étapes isolées ou non liées
 - 🚀 **Performance améliorée** - Réponses plus rapides grâce à l'optimisation de la recherche (6 résultats au lieu de 10, filtrage par pertinence ≥40%)
 - 📊 **Chunking optimisé** - Chunks de 800 caractères (au lieu de 1000) pour une meilleure pertinence
 - 🔢 **Numérotation des étapes corrigée** - Les étapes commencent toujours par "Étape 1" et sont numérotées séquentiellement
-- 🧹 **Code nettoyé** - Suppression du code inutilisé lié aux images
+- 🧹 **Code nettoyé** - Suppression complète du code lié aux images (plus de 200 lignes supprimées)
 
 ### 🔧 Améliorations Techniques
 
 - ✅ **Optimisation de la recherche** : Réduction de 10 à 6 résultats, filtrage par pertinence ≥40%
 - ✅ **Limitation du contexte** : Maximum 8000 caractères par document pour éviter de surcharger le LLM
 - ✅ **Chunking optimisé** : 800 caractères avec overlap de 150 (au lieu de 1000/200)
+- ✅ **Format compact** : Instructions système mises à jour pour des réponses concises mais complètes
+- ✅ **Cohérence des étapes** : Instructions renforcées pour garantir que chaque étape suit logiquement la précédente
 - ✅ **Numérotation forcée** : Instructions système renforcées pour garantir que les étapes commencent toujours par "Étape 1"
-- ✅ **Retrait complet des images** : Dans toutes les versions (CLI, Web), seules les URLs vers les pages pertinentes sont affichées
+- ✅ **Retrait complet des images** : Dans toutes les versions (CLI, Web), seules les URLs vers les pages pertinentes sont affichées. Toutes les références aux images retirées des instructions système
 - ✅ **Secrets Qdrant** : Vérification et chargement correct des secrets depuis Streamlit secrets et variables d'environnement
+- ✅ **Nettoyage du code** : Suppression de plus de 200 lignes de code lié au traitement d'images
 
 ### 📚 Documentation
 
