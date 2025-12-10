@@ -390,7 +390,7 @@ try:
 except (KeyError, AttributeError, TypeError):
     pass  # Silently fail if secrets are not available
 # Priority 2: CLI config file (~/.primbot/config.json)
-elif not default_gemini_key:
+if not default_gemini_key:
     try:
         config_file = Path.home() / ".primbot" / "config.json"
         if config_file.exists():
