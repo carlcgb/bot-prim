@@ -105,7 +105,6 @@ primbot ask --interactive
 | `primbot ask "question"` | Poser une question |
 | `primbot ask -i` | Mode interactif (chat) |
 | `primbot ask "q" --model MODEL` | Utiliser un modèle spécifique |
-| `primbot ask "q" --provider local` | Utiliser Ollama (local) |
 
 ## 🔧 Configuration
 
@@ -198,7 +197,7 @@ GEMINI_API_KEY = "votre_cle_api"
 bot-prim/
 ├── app.py                 # Interface Streamlit
 ├── primbot_cli.py         # Interface CLI
-├── agent.py               # Agent AI (Gemini/Ollama)
+├── agent.py               # Agent AI (Gemini)
 ├── knowledge_base.py      # Base de données vectorielle
 ├── scraper.py             # Scraping documentation
 ├── ingest.py              # Script d'ingestion
