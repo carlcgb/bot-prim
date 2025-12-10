@@ -200,12 +200,13 @@ class PrimAgent:
                 filtered_results = filtered_results[:7]  # Top 7 results
             
             if not filtered_results:
-                # If no results above 40%, use top 3 even if lower
-                filtered_results = all_results[:3]
+                # If no results above 30%, use top 5 even if lower
+                # This ensures we always have some context
+                filtered_results = all_results[:5]
             
             # Build context with filtered and sorted results
             context = f"📚 Résultats de recherche dans la documentation PrimLogix pour: '{query}'\n"
-            context += f"Trouvé {len(filtered_results)} document(s) pertinent(s) (filtrés par pertinence ≥40%)\n\n"
+            context += f"Trouvé {len(filtered_results)} document(s) pertinent(s) (filtrés par pertinence ≥30%)\n\n"
             context += "**⚠️ IMPORTANT : Utilise UNIQUEMENT les informations des documents ci-dessous. Les documents sont triés par pertinence (score le plus élevé en premier). Privilégie les documents avec score 🟢 (≥70%) ou 🟡 (≥50%).**\n\n"
             
             seen_docs = set()  # Avoid exact duplicate content

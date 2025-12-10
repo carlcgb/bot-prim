@@ -354,7 +354,22 @@ def scrape_page(url):
 
 def run_scraper():
     """Main function to run the scraper."""
+    # Start from base URL
     scrape_page(BASE_URL)
+    
+    # Also try to access known important pages directly
+    # Some pages might not be linked from the main page
+    known_pages = [
+        "dlg103.html",  # Créer un utilisateur et l'affecter à un groupe
+        "dlg104.html",  # Other common dialogs
+    ]
+    
+    for page in known_pages:
+        full_url = urljoin(BASE_URL, page)
+        if full_url not in visited_urls:
+            logger.info(f"Trying to access known page: {full_url}")
+            scrape_page(full_url)
+    
     logger.info(f"Scraping complete. Found {len(pages_content)} pages.")
     return pages_content
 
