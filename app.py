@@ -1,6 +1,10 @@
 import streamlit as st
 import os
 import re
+import logging
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # Load Qdrant secrets from Streamlit FIRST (before importing knowledge_base)
 # This ensures Qdrant Cloud is used when secrets are available
