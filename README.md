@@ -19,15 +19,22 @@ Assistant intelligent en support client pour la documentation PrimLogix avec Gem
 - 🌐 **Recherche internet complémentaire** : Utilisation automatique de DuckDuckGo pour compléter les détails techniques (ports SMTP, serveurs, etc.)
 - 👍👎 **Système de feedback** : Amélioration continue basée sur vos retours
 
-## 🚀 Installation Rapide
+## 🚀 Installation
+
+### Méthode recommandée : pip install
 
 ```bash
-# Installation depuis GitHub
+# Installation depuis GitHub (dernière version)
 pip install git+https://github.com/carlcgb/bot-prim.git
+
+# Mise à jour vers la dernière version
+pip install --upgrade git+https://github.com/carlcgb/bot-prim.git
 
 # Vérifier l'installation
 primbot --help
 ```
+
+**Note :** L'installation via `pip install` est la méthode recommandée et vous donne toujours accès à la dernière version du code.
 
 ## 📖 Utilisation Rapide
 

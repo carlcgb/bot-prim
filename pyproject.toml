@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "primbot"
-version = "1.0.3"
-description = "PRIMBOT CLI - PrimLogix Debug Agent with Gemini AI and Ollama"
+version = "1.0.4"
+description = "PRIMBOT CLI - PrimLogix Debug Agent with Gemini AI"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
@@ -16,24 +16,29 @@ keywords = ["primlogix", "ai", "cli", "gemini", "assistant"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 dependencies = [
     "streamlit",
-    "openai",
     "beautifulsoup4",
     "chromadb",
+    "qdrant-client",
     "sentence-transformers",
     "html2text",
     "requests",
     "google-generativeai",
+    "pillow",
+    "openai>=1.0.0",
+    "duckduckgo-search",
 ]
 
 [project.scripts]
