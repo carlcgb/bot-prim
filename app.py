@@ -39,10 +39,14 @@ except Exception as e:
 # Now import knowledge_base (after Qdrant env vars are set)
 # Import agent with warnings suppressed (like in primbot_cli.py)
 import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings('ignore', category=RuntimeWarning)
-    warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
-    from agent import PrimAgent
+try:
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=RuntimeWarning)
+        warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
+        from agent import PrimAgent
+except (KeyError, ImportError, AttributeError) as e:
+    logger.error(f"Failed to import PrimAgent: {e}")
+    raise
 from knowledge_base import collection
 from storage_local import get_storage
 import json
@@ -380,8 +384,11 @@ model_name = "gemini-2.5-flash"
 default_gemini_key = ""
 
 # Priority 1: Streamlit Cloud secrets
-if hasattr(st, 'secrets') and hasattr(st.secrets, 'GEMINI_API_KEY'):
-    default_gemini_key = st.secrets.GEMINI_API_KEY
+try:
+    if hasattr(st, 'secrets') and hasattr(st.secrets, 'GEMINI_API_KEY'):
+        default_gemini_key = st.secrets.GEMINI_API_KEY
+except (KeyError, AttributeError, TypeError):
+    pass  # Silently fail if secrets are not available
 # Priority 2: CLI config file (~/.primbot/config.json)
 elif not default_gemini_key:
     try:
@@ -402,7 +409,7 @@ if True:  # Always Gemini
     default_gemini_key = ""
     
     # Priority 1: Streamlit Cloud secrets
-    if hasattr(st.secrets, "GEMINI_API_KEY"):
+    if hasattr(st, 'secrets') and hasattr(st.secrets, "GEMINI_API_KEY"):
         default_gemini_key = st.secrets.GEMINI_API_KEY
     # Priority 2: CLI config file (~/.primbot/config.json)
     elif not default_gemini_key:
