@@ -1,15 +1,8 @@
 import streamlit as st
-from agent import PrimAgent
-from knowledge_base import collection
-from storage_local import get_storage
 import os
-import json
-from pathlib import Path
 
-st.set_page_config(page_title="PrimLogix Debug Agent", layout="wide")
-
-# Load Qdrant secrets from Streamlit (for Streamlit Cloud deployment)
-# Only try to access secrets if they exist (to avoid errors in local development)
+# Load Qdrant secrets from Streamlit FIRST (before importing knowledge_base)
+# This ensures Qdrant Cloud is used when secrets are available
 try:
     if hasattr(st, 'secrets'):
         # Check if secrets file exists by trying to access it safely
@@ -18,12 +11,26 @@ try:
                 os.environ['USE_QDRANT'] = str(st.secrets['qdrant'].get('USE_QDRANT', 'false'))
                 os.environ['QDRANT_URL'] = st.secrets['qdrant'].get('QDRANT_URL', '')
                 os.environ['QDRANT_API_KEY'] = st.secrets['qdrant'].get('QDRANT_API_KEY', '')
-        except Exception:
+                # Log for debugging (only in Streamlit Cloud)
+                if os.environ.get('USE_QDRANT', 'false').lower() == 'true':
+                    print(f"✅ Qdrant Cloud configured: URL={os.environ.get('QDRANT_URL', 'N/A')[:50]}...")
+        except Exception as e:
             # Secrets file doesn't exist, use environment variables or .env file instead
+            print(f"⚠️ Could not load Qdrant secrets: {e}")
             pass
-except Exception:
+except Exception as e:
     # If secrets are not available, continue with environment variables
+    print(f"⚠️ Secrets not available: {e}")
     pass
+
+# Now import knowledge_base (after Qdrant env vars are set)
+from agent import PrimAgent
+from knowledge_base import collection
+from storage_local import get_storage
+import json
+from pathlib import Path
+
+st.set_page_config(page_title="PrimLogix Debug Agent", layout="wide")
 
 st.title("🤖 PrimLogix Debug Agent")
 
@@ -38,56 +45,65 @@ if "kb_initialized" not in st.session_state:
         st.session_state.kb_initialized = True
         st.session_state.kb_auto_init_attempted = True
 
+# Check which backend is being used
+USE_QDRANT = os.getenv('USE_QDRANT', 'false').lower() == 'true'
+backend_type = "Qdrant Cloud" if USE_QDRANT else "ChromaDB Local"
+
 # Check if knowledge base is empty
 kb_count = collection.count()
 if kb_count == 0:
-    st.warning("⚠️ **Base de connaissances vide** - Le bot ne peut pas rechercher dans la documentation PrimLogix.")
-    
-    # Auto-initialization option
-    if not st.session_state.get("kb_auto_init_attempted", False):
-        st.info("💡 **Initialisation automatique disponible** - Cliquez sur le bouton ci-dessous pour initialiser automatiquement la base de connaissances.")
-    
-    with st.expander("🔧 Initialiser la base de connaissances", expanded=True):
-        col1, col2 = st.columns([2, 1])
+    if USE_QDRANT:
+        st.error("⚠️ **Base de connaissances Qdrant Cloud vide** - La base de connaissances devrait déjà contenir des documents. Vérifiez la configuration Qdrant ou contactez l'administrateur.")
+        st.info("💡 **Note** : Si vous utilisez Qdrant Cloud, les données devraient déjà être présentes. L'ingestion n'est nécessaire que pour ChromaDB local.")
+    else:
+        st.warning("⚠️ **Base de connaissances vide** - Le bot ne peut pas rechercher dans la documentation PrimLogix.")
         
-        with col1:
-            st.markdown("""
-            **Options d'initialisation :**
+        # Auto-initialization option (only for ChromaDB local)
+        if not st.session_state.get("kb_auto_init_attempted", False):
+            st.info("💡 **Initialisation automatique disponible** - Cliquez sur le bouton ci-dessous pour initialiser automatiquement la base de connaissances.")
+        
+        with st.expander("🔧 Initialiser la base de connaissances", expanded=True):
+            col1, col2 = st.columns([2, 1])
             
-            1. **Automatique (Recommandé)** : Cliquez sur le bouton ci-dessous pour scraper et ingérer la documentation
-            2. **Manuelle** : Incluez le dossier `chroma_db/` dans le repository GitHub
-            """)
-        
-        if st.button("🚀 Lancer l'ingestion automatique de la documentation", type="primary", use_container_width=True):
-            st.session_state.kb_auto_init_attempted = True
-            with st.spinner("Scraping et ingestion en cours... Cela peut prendre 5-10 minutes. Veuillez patienter..."):
-                try:
-                    from scraper import run_scraper
-                    from knowledge_base import add_documents
-                    
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    
-                    status_text.text("📥 Étape 1/2 : Scraping de la documentation PrimLogix...")
-                    progress_bar.progress(30)
-                    data = run_scraper()
-                    
-                    status_text.text(f"💾 Étape 2/2 : Ajout de {len(data)} pages à la base de connaissances...")
-                    progress_bar.progress(70)
-                    add_documents(data)
-                    
-                    progress_bar.progress(100)
-                    final_count = collection.count()
-                    status_text.text(f"✅ Terminé ! {final_count} documents chargés")
-                    
-                    st.success(f"✅ Base de connaissances initialisée avec {final_count} documents!")
-                    st.session_state.kb_initialized = True
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Erreur lors de l'ingestion: {e}")
-                    st.info("💡 **Alternative** : Vous pouvez inclure le dossier `chroma_db/` dans le repository GitHub pour éviter l'initialisation à chaque déploiement.")
+            with col1:
+                st.markdown("""
+                **Options d'initialisation :**
+                
+                1. **Automatique (Recommandé)** : Cliquez sur le bouton ci-dessous pour scraper et ingérer la documentation
+                2. **Manuelle** : Incluez le dossier `chroma_db/` dans le repository GitHub
+                """)
+            
+            if st.button("🚀 Lancer l'ingestion automatique de la documentation", type="primary", use_container_width=True):
+                st.session_state.kb_auto_init_attempted = True
+                with st.spinner("Scraping et ingestion en cours... Cela peut prendre 5-10 minutes. Veuillez patienter..."):
+                    try:
+                        from scraper import run_scraper
+                        from knowledge_base import add_documents
+                        
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        
+                        status_text.text("📥 Étape 1/2 : Scraping de la documentation PrimLogix...")
+                        progress_bar.progress(30)
+                        data = run_scraper()
+                        
+                        status_text.text(f"💾 Étape 2/2 : Ajout de {len(data)} pages à la base de connaissances...")
+                        progress_bar.progress(70)
+                        add_documents(data)
+                        
+                        progress_bar.progress(100)
+                        final_count = collection.count()
+                        status_text.text(f"✅ Terminé ! {final_count} documents chargés")
+                        
+                        st.success(f"✅ Base de connaissances initialisée avec {final_count} documents!")
+                        st.session_state.kb_initialized = True
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Erreur lors de l'ingestion: {e}")
+                        st.info("💡 **Alternative** : Vous pouvez inclure le dossier `chroma_db/` dans le repository GitHub pour éviter l'initialisation à chaque déploiement.")
 else:
     st.sidebar.success(f"📚 Base de connaissances: {kb_count} documents")
+    st.sidebar.info(f"🔧 Backend: {backend_type}")
     
     # Afficher le nombre de conversations sauvegardées et statistiques de feedback
     try:

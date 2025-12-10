@@ -15,11 +15,12 @@ qdrant_client = None
 # Initialize backend
 if USE_QDRANT and QDRANT_URL and QDRANT_API_KEY:
     # Use Qdrant Cloud
-    logger.info("Using Qdrant Cloud for knowledge base")
+    logger.info(f"Using Qdrant Cloud for knowledge base: {QDRANT_URL[:50]}...")
     try:
         from knowledge_base_qdrant import QdrantKnowledgeBase
         qdrant_client = QdrantKnowledgeBase(url=QDRANT_URL, api_key=QDRANT_API_KEY)
         collection = qdrant_client  # Compatible interface
+        logger.info("✅ Qdrant Cloud initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Qdrant: {e}")
         logger.info("Falling back to ChromaDB local")
