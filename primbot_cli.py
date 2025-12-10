@@ -348,7 +348,7 @@ def cmd_ask(args):
     
     # Interactive mode
     if args.interactive or not query:
-        print("🤖 PRIMBOT CLI - PrimLogix Debug Agent")
+        print("🦸‍♂️🤖 DEBUGEX CLI")
         if kb_count > 0:
             print(f"📚 Base de connaissances: {kb_count} documents")
         print(f"🤖 Fournisseur: {provider_name} ({model})")
