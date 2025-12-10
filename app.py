@@ -274,6 +274,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🦸‍♂️ DEBUGEX")
+st.caption("Agent IA pour l'aide en ligne PrimLogix")
 
 # Auto-initialize knowledge base if empty (only once per session)
 if "kb_initialized" not in st.session_state:

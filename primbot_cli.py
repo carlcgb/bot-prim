@@ -349,6 +349,7 @@ def cmd_ask(args):
     # Interactive mode
     if args.interactive or not query:
         print("🦸‍♂️ DEBUGEX CLI")
+        print("Agent IA pour l'aide en ligne PrimLogix\n")
         if kb_count > 0:
             print(f"📚 Base de connaissances: {kb_count} documents")
         print(f"🤖 Fournisseur: {provider_name} ({model})")
