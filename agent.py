@@ -144,9 +144,10 @@ class PrimAgent:
             # Search with more results initially to filter later
             all_results = []
             
-            # Collect results from multiple queries (reduced to 2 for speed)
+            # Collect results from multiple queries (increased to 3 for better coverage)
             seen_ids = set()
-            for search_query in search_queries[:2]:  # Limit to 2 queries for better speed
+            # Prioritize original query, then try variations
+            for search_query in search_queries[:3]:  # Increased to 3 queries for better coverage
                 try:
                     query_results = query_knowledge_base(search_query, n_results=8)  # Reduced for speed
                     if query_results and query_results.get('documents') and query_results['documents'][0]:
