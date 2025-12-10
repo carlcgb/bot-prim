@@ -1,16 +1,16 @@
-# 🤖 PRIMBOT
+# 🦸‍♂️ DEBUGEX
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/badge/release-v1.0.4-green.svg)](https://github.com/carlcgb/bot-prim/releases)
 
-Assistant intelligent en support client pour la documentation PrimLogix avec Gemini AI. **100% gratuit**, aucune carte de crédit requise.
+Agent IA pour l'aide en ligne PrimLogix avec Gemini AI. **100% gratuit**, aucune carte de crédit requise.
 
 ## ✨ Fonctionnalités
 
 - 🔍 **Recherche intelligente optimisée** : Expansion automatique des requêtes avec synonymes, 8 résultats optimisés avec scores de pertinence
 - 🔗 **Liens précis** : URLs exactes vers les sections spécifiques de l'aide en ligne utilisées dans la réponse
-- 📸 **Images contextuelles** : Captures d'écran de l'interface PrimLogix (max 400×300px) avec modal plein écran au clic pour agrandissement
+- 📸 **Images contextuelles prioritaires** : Captures d'écran complètes de l'interface PrimLogix priorisées (max 400×300px) avec modal plein écran au clic. Système de scoring intelligent pour exclure emojis/icônes et prioriser les vraies captures d'écran.
 - 🌙 **Mode sombre** : Interface Streamlit en mode sombre par défaut
 - 🤖 **Gemini AI** : Support exclusif Gemini (gratuit, 60 req/min, 1500 req/jour)
 - 💻 **Multi-interface** : CLI et interface Web (Streamlit)
@@ -224,7 +224,7 @@ bot-prim/
 
 ## 📖 À Propos
 
-**PRIMBOT** est un assistant intelligent en support client spécialement conçu pour aider les utilisateurs de PrimLogix à résoudre leurs problèmes techniques et naviguer dans la documentation.
+**DEBUGEX** est un agent IA intelligent spécialement conçu pour aider les utilisateurs de PrimLogix à résoudre leurs problèmes techniques et naviguer dans la documentation de l'aide en ligne.
 
 - 🎯 **Objectif** : Simplifier l'accès à la documentation PrimLogix avec un support client de qualité
 - 🆓 **100% gratuit** : Aucune carte de crédit, plan gratuit généreux

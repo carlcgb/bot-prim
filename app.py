@@ -43,7 +43,7 @@ from storage_local import get_storage
 import json
 from pathlib import Path
 
-st.set_page_config(page_title="PrimLogix Debug Agent", layout="wide")
+st.set_page_config(page_title="DEBUGEX - Agent IA PrimLogix", layout="wide")
 
 # Add CSS and JavaScript for image modal
 st.markdown("""
@@ -140,7 +140,6 @@ st.markdown("""
 <script>
     // Make functions globally available
     window.openImageModal = function(imgSrc, imgAlt) {
-        console.log('Opening modal with:', imgSrc);
         var modal = document.getElementById('imageModal');
         var modalImg = document.getElementById('modalImage');
         var caption = document.getElementById('imageCaption');
