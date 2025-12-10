@@ -459,24 +459,41 @@ if True:  # Always Gemini
 
 def convert_images_to_clickable(content):
     """Convert markdown images to clickable HTML images with modal."""
-    # Find all markdown images: ![alt](url)
+    # Find all markdown images: ![alt](url) - more flexible pattern
+    # This pattern handles:
+    # - ![alt](url)
+    # - ![alt text with spaces](url)
+    # - ![alt](url with spaces)
+    # - Images on separate lines or inline
     pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
     
     def replace_image(match):
-        alt_text = match.group(1) or 'Image'
-        img_url = match.group(2)
+        alt_text = match.group(1).strip() or 'Image'
+        img_url = match.group(2).strip()
+        
+        # Clean up URL (remove leading/trailing spaces, ensure it's a valid URL)
+        img_url = img_url.strip()
+        if not img_url.startswith(('http://', 'https://', 'data:')):
+            # If relative URL, try to make it absolute (assuming it's from aide.primlogix.com)
+            if img_url.startswith('/'):
+                img_url = 'https://aide.primlogix.com' + img_url
+            elif not img_url.startswith('http'):
+                # Might be a relative path, try to construct full URL
+                img_url = 'https://aide.primlogix.com/prim/fr/5-8/' + img_url.lstrip('/')
         
         # Escape quotes in alt text for HTML attribute
-        escaped_alt = alt_text.replace('"', '&quot;').replace("'", '&#39;')
+        escaped_alt = alt_text.replace('"', '&quot;').replace("'", '&#39;').replace('<', '&lt;').replace('>', '&gt;')
+        escaped_url = img_url.replace('"', '&quot;').replace("'", '&#39;')
         
         # SVG placeholder for error handling (base64 encoded)
         svg_placeholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBub24gZGlzcG9uaWJsZTwvdGV4dD48L3N2Zz4='
         
-        # Return HTML with clickable image - NO onclick attribute (use event delegation instead)
-        # The JavaScript will handle clicks via event delegation
-        return (f'<div class="image-container" data-image-url="{img_url}" data-image-alt="{escaped_alt}">'
-                f'<img src="{img_url}" alt="{alt_text}" '
-                f'onerror="this.onerror=null; this.src=\'{svg_placeholder}\';" /></div>')
+        # Return HTML with clickable image - ensure it's on a single line to prevent markdown parsing issues
+        html_img = (f'<div class="image-container" data-image-url="{escaped_url}" data-image-alt="{escaped_alt}">'
+                   f'<img src="{escaped_url}" alt="{escaped_alt}" '
+                   f'onerror="this.onerror=null; this.src=\'{svg_placeholder}\';" style="max-width:400px;max-height:300px;object-fit:contain;" /></div>')
+        
+        return html_img
     
     # Replace all markdown images with clickable HTML
     html_content = re.sub(pattern, replace_image, content)
