@@ -150,21 +150,15 @@ def cmd_ask(args):
     if not api_key:
         api_key = config.get('gemini_api_key') or os.getenv('GEMINI_API_KEY', '')
     
-    # Get provider
-    provider = args.provider or config.get('default_provider', 'gemini')
+    # Gemini is now mandatory
+    provider = 'gemini'
+    provider_name = 'Google Gemini'
     
     # Get model
-    model = args.model or config.get('default_model')
-    if not model:
-        model = 'gemini-2.5-flash' if provider == 'gemini' else 'llama3.1'
-    
-    # Get base URL for Ollama
-    base_url = args.base_url
-    if not base_url and provider == 'local':
-        base_url = config.get('ollama_url', 'http://localhost:11434/v1')
+    model = args.model or config.get('default_model', 'gemini-2.5-flash')
     
     # Prompt for API key if needed
-    if not api_key and provider == 'gemini':
+    if not api_key:
         print("🔑 Clé API Gemini requise", file=sys.stderr)
         print("   Configurez-la avec: primbot config --gemini-key VOTRE_CLE", file=sys.stderr)
         print("   Ou obtenez-en une gratuite sur: https://aistudio.google.com/\n", file=sys.stderr)
@@ -175,13 +169,6 @@ def cmd_ask(args):
         # Save to config
         config['gemini_api_key'] = api_key
         save_config(config)
-    
-    # Map provider
-    provider_map = {
-        'gemini': 'Google Gemini',
-        'local': 'Local (Ollama/LocalAI)'
-    }
-    provider_name = provider_map.get(provider, 'Google Gemini')
     
     # Check knowledge base
     kb_count = collection.count()

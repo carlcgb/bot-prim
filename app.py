@@ -110,65 +110,34 @@ else:
 # Sidebar Configuration
 st.sidebar.header("⚙️ Configuration")
 
-provider_type = st.sidebar.radio("LLM Provider", ["OpenAI", "Google Gemini", "Local (Ollama/LocalAI)"])
-
+# Gemini is now mandatory
+provider_type = "Google Gemini"
 api_key = ""
 base_url = None
-model_name = "gpt-3.5-turbo"
+model_name = "gemini-2.5-flash"
 
-if provider_type == "OpenAI":
-    # Get OpenAI API key with priority: Streamlit secrets > CLI config > Environment variable > User input
-    default_openai_key = ""
-    
-    # Priority 1: Streamlit Cloud secrets
-    if hasattr(st, 'secrets') and hasattr(st.secrets, 'OPENAI_API_KEY'):
-        default_openai_key = st.secrets.OPENAI_API_KEY
-    # Priority 2: CLI config file (~/.primbot/config.json)
-    elif not default_openai_key:
-        try:
-            config_file = Path.home() / ".primbot" / "config.json"
-            if config_file.exists():
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    cli_config = json.load(f)
-                    if cli_config.get('openai_api_key'):
-                        default_openai_key = cli_config['openai_api_key']
-        except Exception:
-            pass
-    # Priority 3: Environment variable
-    if not default_openai_key and "OPENAI_API_KEY" in os.environ:
-        default_openai_key = os.getenv("OPENAI_API_KEY", "")
-    
-    st.sidebar.info("💳 **OpenAI** : Utilisez votre clé API OpenAI. Obtenez votre clé sur [platform.openai.com](https://platform.openai.com/api-keys)")
-    
-    api_key = st.sidebar.text_input(
-        "OpenAI API Key", 
-        value=default_openai_key, 
-        type="password", 
-        help="Get your API key from https://platform.openai.com/api-keys"
-    )
-    
-    # Save to CLI config if user enters a new key
-    if api_key and api_key != default_openai_key:
-        try:
-            config_file = Path.home() / ".primbot" / "config.json"
-            config_file.parent.mkdir(exist_ok=True)
-            config = {}
-            if config_file.exists():
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-            config['openai_api_key'] = api_key
-            with open(config_file, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=2)
-        except Exception:
-            pass
-    base_url = None  # Use default OpenAI endpoint
-    model_name = st.sidebar.selectbox(
-        "Model Name", 
-        ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4o", "gpt-4o-mini"],
-        index=0,
-        help="gpt-3.5-turbo: Fast and affordable. gpt-4: Most capable but slower and more expensive."
-    )
-elif provider_type == "Google Gemini":
+# Get Gemini API key with priority: Streamlit secrets > CLI config > Environment variable > User input
+default_gemini_key = ""
+
+# Priority 1: Streamlit Cloud secrets
+if hasattr(st, 'secrets') and hasattr(st.secrets, 'GEMINI_API_KEY'):
+    default_gemini_key = st.secrets.GEMINI_API_KEY
+# Priority 2: CLI config file (~/.primbot/config.json)
+elif not default_gemini_key:
+    try:
+        config_file = Path.home() / ".primbot" / "config.json"
+        if config_file.exists():
+            with open(config_file, 'r', encoding='utf-8') as f:
+                cli_config = json.load(f)
+                if cli_config.get('gemini_api_key'):
+                    default_gemini_key = cli_config['gemini_api_key']
+    except Exception:
+        pass  # Silently fail if config file doesn't exist or can't be read
+# Priority 3: Environment variable
+if not default_gemini_key and "GEMINI_API_KEY" in os.environ:
+    default_gemini_key = os.getenv("GEMINI_API_KEY", "")
+
+if True:  # Always Gemini
     # Get Gemini API key with priority: Streamlit secrets > CLI config > Environment variable > User input
     default_gemini_key = ""
     
@@ -213,29 +182,13 @@ elif provider_type == "Google Gemini":
                 json.dump(config, f, indent=2)
         except Exception:
             pass  # Silently fail if can't save config
-    base_url = None  # Gemini uses google-generativeai library directly, not OpenAI-compatible endpoint
+    base_url = None  # Gemini uses google-generativeai library directly
     model_name = st.sidebar.selectbox(
         "Model Name", 
         ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
         index=0,
         help="gemini-2.5-flash: Fastest and free. gemini-2.5-pro: Most capable (may have rate limits on free tier)"
     )
-else:
-    st.sidebar.info("🆓 **100% Gratuit** : Ollama fonctionne localement, aucune clé API nécessaire!")
-    st.sidebar.markdown("**Installation:**\n1. Téléchargez [Ollama](https://ollama.ai/)\n2. Installez un modèle: `ollama pull llama3.1`\n3. Lancez: `ollama serve`")
-    
-    base_url = st.sidebar.text_input(
-        "Base URL", 
-        value="http://localhost:11434/v1",
-        help="URL de votre instance Ollama (par défaut: http://localhost:11434/v1)"
-    )
-    model_name = st.sidebar.selectbox(
-        "Model Name", 
-        ["llama3.1", "llama3.1:8b", "llama3.2", "mistral", "mixtral", "codellama"],
-        index=0,
-        help="Modèles recommandés: llama3.1 (équilibré), mistral (rapide), mixtral (puissant)"
-    )
-    api_key = "ollama" # Dummy key for local
 
 # Initialize Chat History
 if "messages" not in st.session_state:
@@ -287,7 +240,7 @@ if prompt := st.chat_input("Describe the problem..."):
             # Initialize Agent
             agent = PrimAgent(api_key=api_key, base_url=base_url, model=model_name, provider=provider_type)
             
-            # Prepare messages logic (filtering out tools for initial pass if needed, but OpenAI handles history)
+            # Prepare messages logic
             # We pass full history so it has context
             # We filter out UI-specific keys if we added any, but here we stick to standard role/content
             
@@ -384,19 +337,18 @@ if prompt := st.chat_input("Describe the problem..."):
 **Erreur:** {error_type}
 
 **Solutions:**
-1. Vérifiez que votre clé API est correcte
-2. Pour Gemini: Obtenez une clé gratuite sur [Google AI Studio](https://aistudio.google.com/)
-3. Vérifiez que la clé API est bien configurée dans les secrets/variables d'environnement
-4. Pour Ollama: Assurez-vous que `ollama serve` est lancé"""
+1. Vérifiez que votre clé API Gemini est correcte
+2. Obtenez une clé gratuite sur [Google AI Studio](https://aistudio.google.com/)
+3. Vérifiez que la clé API est bien configurée dans les secrets/variables d'environnement"""
             elif "model" in error_msg.lower() or "404" in error_msg or "not found" in error_msg.lower():
                 detailed_error = f"""❌ **Modèle non trouvé**
 
 **Erreur:** {error_type}: {error_msg}
 
 **Solutions:**
-1. Vérifiez que le nom du modèle est correct
-2. Pour Gemini: Essayez `gemini-2.5-flash` ou `gemini-2.0-flash`
-3. Pour Ollama: Vérifiez que le modèle est installé: `ollama list`"""
+1. Vérifiez que le nom du modèle Gemini est correct
+2. Essayez `gemini-2.5-flash` ou `gemini-2.0-flash`
+3. Consultez la [liste des modèles disponibles](https://ai.google.dev/models/gemini)"""
             elif "knowledge" in error_msg.lower() or "base" in error_msg.lower() or "chromadb" in error_msg.lower():
                 detailed_error = f"""❌ **Erreur de base de connaissances**
 

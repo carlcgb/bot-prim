@@ -1,4 +1,3 @@
-from openai import OpenAI
 try:
     from duckduckgo_search import DDGS
 except ImportError:
@@ -7,102 +6,63 @@ from knowledge_base import query_knowledge_base
 import json
 import logging
 import google.generativeai as genai
-from google.generativeai.types import content_types
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
 class PrimAgent:
-    def __init__(self, api_key, base_url=None, model="gpt-3.5-turbo", provider="OpenAI"):
-        self.provider = provider
+    def __init__(self, api_key, base_url=None, model="gemini-2.5-flash", provider="Google Gemini"):
+        # Gemini is now mandatory
+        if provider != "Google Gemini":
+            raise ValueError("Only Google Gemini is supported. Please use provider='Google Gemini'")
+        
+        self.provider = "Google Gemini"
         self.model_name = model
         self.ddgs = DDGS()
         
-        # Tools definition for OpenAI
-        self.openai_tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "search_knowledge_base",
-                    "description": "Search the PrimLogix technical documentation for debugging client issues. Use this for: PrimLogix-specific errors, field configurations, database issues, API problems, feature implementation details, configuration parameters, and technical procedures. IMPORTANT: If the first search doesn't return enough results, try multiple searches with different query terms (synonyms, related terms, broader/narrower terms) to find all relevant information.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Technical search query. Include: error codes, field names, feature names, configuration paths, database references, or specific technical terms from PrimLogix. Try multiple variations if first search doesn't find enough information."
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "search_internet",
-                    "description": "Search the internet for general technical debugging information. Use this for: email/SMTP configuration issues, network problems, database connection errors, API authentication issues, general software errors, or technical solutions not specific to PrimLogix.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Technical search query with error codes, technology names, or specific technical problem description."
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            }
-        ]
-
-        if self.provider == "Google Gemini":
-            genai.configure(api_key=api_key)
-            
-            # Define Gemini Tools using FunctionDeclaration
-            self.gemini_tools = [
-                genai.protos.Tool(
-                    function_declarations=[
-                        genai.protos.FunctionDeclaration(
-                            name="search_knowledge_base",
-                            description="Search the PrimLogix technical documentation for debugging client issues. Use this for: PrimLogix-specific errors, field configurations, database issues, API problems, feature implementation details, configuration parameters, and technical procedures. IMPORTANT: If the first search doesn't return enough results, try multiple searches with different query terms (synonyms, related terms, broader/narrower terms) to find all relevant information.",
-                            parameters=genai.protos.Schema(
-                                type=genai.protos.Type.OBJECT,
-                                properties={
-                                    "query": genai.protos.Schema(
-                                        type=genai.protos.Type.STRING,
-                                        description="Technical search query. Include: error codes, field names, feature names, configuration paths, database references, or specific technical terms from PrimLogix. Try multiple variations if first search doesn't find enough information."
-                                    )
-                                },
-                                required=["query"]
-                            )
-                        ),
-                        genai.protos.FunctionDeclaration(
-                            name="search_internet",
-                            description="Search the internet for general technical debugging information. Use this for: email/SMTP configuration issues, network problems, database connection errors, API authentication issues, general software errors, or technical solutions not specific to PrimLogix.",
-                            parameters=genai.protos.Schema(
-                                type=genai.protos.Type.OBJECT,
-                                properties={
-                                    "query": genai.protos.Schema(
-                                        type=genai.protos.Type.STRING,
-                                        description="Technical search query with error codes, technology names, or specific technical problem description."
-                                    )
-                                },
-                                required=["query"]
-                            )
+        # Configure Gemini API
+        genai.configure(api_key=api_key)
+        
+        # Define Gemini Tools using FunctionDeclaration
+        self.gemini_tools = [
+            genai.protos.Tool(
+                function_declarations=[
+                    genai.protos.FunctionDeclaration(
+                        name="search_knowledge_base",
+                        description="Search the PrimLogix technical documentation for debugging client issues. Use this for: PrimLogix-specific errors, field configurations, database issues, API problems, feature implementation details, configuration parameters, and technical procedures. IMPORTANT: If the first search doesn't return enough results, try multiple searches with different query terms (synonyms, related terms, broader/narrower terms) to find all relevant information.",
+                        parameters=genai.protos.Schema(
+                            type=genai.protos.Type.OBJECT,
+                            properties={
+                                "query": genai.protos.Schema(
+                                    type=genai.protos.Type.STRING,
+                                    description="Technical search query. Include: error codes, field names, feature names, configuration paths, database references, or specific technical terms from PrimLogix. Try multiple variations if first search doesn't find enough information."
+                                )
+                            },
+                            required=["query"]
                         )
-                    ]
-                )
-            ]
-            
-            # Map for execution
-            self.tool_map = {
-                "search_knowledge_base": self._search_kb,
-                "search_internet": self._search_web
-            }
-
-        else:
-            self.client = OpenAI(api_key=api_key, base_url=base_url)
+                    ),
+                    genai.protos.FunctionDeclaration(
+                        name="search_internet",
+                        description="Search the internet for general technical debugging information. Use this for: email/SMTP configuration issues, network problems, database connection errors, API authentication issues, general software errors, or technical solutions not specific to PrimLogix.",
+                        parameters=genai.protos.Schema(
+                            type=genai.protos.Type.OBJECT,
+                            properties={
+                                "query": genai.protos.Schema(
+                                    type=genai.protos.Type.STRING,
+                                    description="Technical search query with error codes, technology names, or specific technical problem description."
+                                )
+                            },
+                            required=["query"]
+                        )
+                    )
+                ]
+            )
+        ]
+        
+        # Map for execution
+        self.tool_map = {
+            "search_knowledge_base": self._search_kb,
+            "search_internet": self._search_web
+        }
 
 
     def _search_kb(self, query):
@@ -219,12 +179,8 @@ class PrimAgent:
             return f"Error searching internet: {e}"
 
     def run(self, messages):
-        if self.provider == "Google Gemini":
-            return self._run_gemini(messages)
-        else:
-            return self._run_openai(messages)
-
-    def _run_openai(self, messages):
+        # Only Gemini is supported
+        return self._run_gemini(messages)
         # Technical system instruction for debugging-oriented responses
         system_message = {
             "role": "system",
@@ -379,8 +335,82 @@ LANGUE:
                 tools=self.gemini_tools,
                 system_instruction=system_instruction
             )
-            chat_auto = model_auto.start_chat(history=history, enable_automatic_function_calling=True)
-            return chat_auto.send_message(last_content).text
+            chat_auto = model_auto.start_chat(history=history)
+            
+            # Handle function calls manually to avoid "Could not convert part.function_call to text" error
+            max_iterations = 10
+            iteration = 0
+            
+            while iteration < max_iterations:
+                iteration += 1
+                response = chat_auto.send_message(last_content)
+                
+                # Check if response has function calls
+                if hasattr(response, 'candidates') and len(response.candidates) > 0:
+                    candidate = response.candidates[0]
+                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                        parts = candidate.content.parts
+                        
+                        # Check if any part is a function call
+                        function_call_part = None
+                        for part in parts:
+                            if hasattr(part, 'function_call') and part.function_call:
+                                function_call_part = part
+                                break
+                        
+                        if function_call_part:
+                            function_call = function_call_part.function_call
+                            function_name = function_call.name
+                            
+                            # Extract arguments
+                            function_args = {}
+                            if hasattr(function_call, 'args'):
+                                try:
+                                    # Try to convert args to dict
+                                    if hasattr(function_call.args, 'keys'):
+                                        function_args = {k: function_call.args[k] for k in function_call.args.keys()}
+                                    elif isinstance(function_call.args, dict):
+                                        function_args = function_call.args
+                                    else:
+                                        # Try to get query directly
+                                        if hasattr(function_call.args, 'query'):
+                                            function_args['query'] = getattr(function_call.args, 'query')
+                                except Exception as e:
+                                    logger.warning(f"Could not extract function arguments: {e}")
+                                    function_args = {}
+                            
+                            # Execute the function
+                            if function_name in self.tool_map:
+                                query = function_args.get('query', '')
+                                function_result = self.tool_map[function_name](query)
+                                
+                                # Send function response back to Gemini
+                                function_response = genai.protos.FunctionResponse(
+                                    name=function_name,
+                                    response={"result": str(function_result)}
+                                )
+                                response = chat_auto.send_message(
+                                    genai.protos.Part(function_response=function_response)
+                                )
+                                continue
+                
+                # No function call, return text response
+                if hasattr(response, 'text'):
+                    return response.text
+                elif hasattr(response, 'candidates') and len(response.candidates) > 0:
+                    candidate = response.candidates[0]
+                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                        text_parts = []
+                        for part in candidate.content.parts:
+                            if hasattr(part, 'text') and part.text:
+                                text_parts.append(part.text)
+                        if text_parts:
+                            return ''.join(text_parts)
+                
+                # If we get here, something unexpected happened
+                break
+            
+            return "Error: Could not get a valid response from Gemini after multiple iterations."
 
         try:
             return attempt_chat(self.model_name)
