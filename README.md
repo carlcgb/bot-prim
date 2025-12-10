@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/badge/release-v1.0.4-green.svg)](https://github.com/carlcgb/bot-prim/releases)
 
-Assistant intelligent en support client pour la documentation PrimLogix avec Gemini AI et Ollama. **100% gratuit**, aucune carte de crédit requise.
+Assistant intelligent en support client pour la documentation PrimLogix avec Gemini AI. **100% gratuit**, aucune carte de crédit requise.
 
 ## ✨ Fonctionnalités
 
