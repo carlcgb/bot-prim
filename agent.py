@@ -24,7 +24,7 @@ with warnings.catch_warnings():
 # Import knowledge_base function (lazy import to avoid circular dependencies)
 try:
     from knowledge_base import query_knowledge_base
-except ImportError as e:
+except (ImportError, KeyError, AttributeError) as e:
     logger.warning(f"Could not import query_knowledge_base: {e}")
     # Define a fallback function
     def query_knowledge_base(query, n_results=10):
