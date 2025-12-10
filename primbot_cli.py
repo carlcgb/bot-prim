@@ -7,12 +7,14 @@ Usage: primbot [command] [options]
 # Suppress warnings BEFORE any imports
 import warnings
 import os
+# Set Google ALTS environment variables FIRST (before any Google imports)
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
+os.environ['GLOG_minloglevel'] = '3'  # 3 = FATAL only (more aggressive)
+os.environ['PYTHONWARNINGS'] = 'ignore'
+os.environ['GRPC_PYTHON_LOGLEVEL'] = 'ERROR'
+# Suppress Python warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
-# Suppress Google ALTS warnings BEFORE any Google imports
-os.environ['GRPC_VERBOSITY'] = 'ERROR'
-os.environ['GLOG_minloglevel'] = '2'
-os.environ['PYTHONWARNINGS'] = 'ignore'
 
 import argparse
 import sys
