@@ -112,8 +112,9 @@ class ThinkingAnimation:
         # Set environment variables FIRST to suppress Google warnings before any imports
         import os
         os.environ['GRPC_VERBOSITY'] = 'ERROR'
-        os.environ['GLOG_minloglevel'] = '2'
+        os.environ['GLOG_minloglevel'] = '3'  # 3 = FATAL only (more aggressive)
         os.environ['PYTHONWARNINGS'] = 'ignore'
+        os.environ['GRPC_PYTHON_LOGLEVEL'] = 'ERROR'
         
         # Save original streams
         self.original_stdout = sys.stdout
