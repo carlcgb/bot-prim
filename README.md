@@ -219,7 +219,7 @@ bot-prim/
 - **Vector DB**: ChromaDB (local) ou Qdrant Cloud (gratuit, 1GB)
 - **Embeddings**: Sentence Transformers
 - **Web**: Streamlit (mode sombre)
-- **Internet Search**: DuckDuckGo Search (pour compléments techniques)
+- **Internet Search**: ddgs (DuckDuckGo Search - pour compléments techniques)
 - **Language**: Python 3.8+
 
 ## 📖 À Propos
