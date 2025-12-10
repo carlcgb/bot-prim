@@ -517,8 +517,22 @@ for message in st.session_state.messages:
             
             # Remove "Captures d'écran de l'interface" section header at the end (but keep images in steps)
             content = re.sub(r'##\s*📸\s*Captures\s*d\'écran\s*pertinentes\s*de\s*l\'interface\s*PrimLogix.*?(?=\n##|\n---|$)', '', content, flags=re.IGNORECASE | re.DOTALL)
-            # Clean up multiple empty lines
-            content = re.sub(r'\n\s*\n\s*\n+', '\n\n', content)
+            
+            # Clean up excessive empty lines (more than 2 consecutive newlines)
+            content = re.sub(r'\n{3,}', '\n\n', content)
+            
+            # Ensure proper spacing around headers
+            content = re.sub(r'\n(#{1,6}\s+[^\n]+)\n([^\n#])', r'\n\n\1\n\n\2', content)
+            
+            # Clean up trailing whitespace on lines
+            content = '\n'.join(line.rstrip() for line in content.split('\n'))
+            
+            # Ensure proper spacing around lists
+            content = re.sub(r'\n(\s*[-*+]\s+)', r'\n\n\1', content)
+            content = re.sub(r'(\n\s*[-*+]\s+[^\n]+)\n([^\s\-*+])', r'\1\n\n\2', content)
+            
+            # Final cleanup of excessive empty lines
+            content = re.sub(r'\n{3,}', '\n\n', content)
             
             # Split content into parts: markdown text and images
             # First, extract images and replace with placeholders
