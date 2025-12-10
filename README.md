@@ -217,11 +217,12 @@ bot-prim/
 ## 🛠️ Technologies
 
 - **AI/ML**: Google Gemini API (exclusif)
-- **Vector DB**: ChromaDB (local) ou Qdrant Cloud (gratuit, 1GB)
-- **Embeddings**: Sentence Transformers
-- **Web**: Streamlit (mode sombre)
+- **Vector DB**: ChromaDB (local par défaut) ou Qdrant Cloud (optionnel, gratuit 1GB)
+- **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)
+- **Web**: Streamlit (mode sombre, layout centered)
 - **Internet Search**: ddgs (DuckDuckGo Search - pour compléments techniques)
 - **Language**: Python 3.8+
+- **Robustesse**: Gestion d'erreurs avancée avec fallback automatique vers ChromaDB si Qdrant échoue
 
 ## 📖 À Propos
 
