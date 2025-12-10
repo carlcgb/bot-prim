@@ -188,8 +188,8 @@ class PrimAgent:
             # Sort by relevance score (highest first)
             all_results.sort(key=lambda x: x['score'], reverse=True)
             
-            # Filter by minimum relevance threshold (40%)
-            filtered_results = [r for r in all_results if r['score'] >= 40]
+            # Filter by minimum relevance threshold (30% - lowered to catch more relevant docs)
+            filtered_results = [r for r in all_results if r['score'] >= 30]
             
             # If we have good results (score >= 50%), prioritize them
             high_relevance = [r for r in filtered_results if r['score'] >= 50]
