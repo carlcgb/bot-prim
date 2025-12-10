@@ -9,6 +9,8 @@ import sys
 import os
 import json
 import re
+import threading
+import time
 from pathlib import Path
 from agent import PrimAgent
 from knowledge_base import collection
@@ -21,6 +23,36 @@ def ensure_config_dir():
     """Ensure config directory exists."""
     CONFIG_DIR.mkdir(exist_ok=True)
     return CONFIG_DIR
+
+class ThinkingAnimation:
+    """Simple thinking animation for CLI."""
+    def __init__(self):
+        self.stop_event = threading.Event()
+        self.thread = None
+        self.spinner_chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+        self.current_char = 0
+    
+    def _animate(self):
+        """Animation loop."""
+        while not self.stop_event.is_set():
+            char = self.spinner_chars[self.current_char % len(self.spinner_chars)]
+            print(f'\rPRIMBOT: {char} Réflexion en cours...', end='', flush=True)
+            self.current_char += 1
+            time.sleep(0.1)
+    
+    def start(self):
+        """Start the animation."""
+        self.stop_event.clear()
+        self.thread = threading.Thread(target=self._animate, daemon=True)
+        self.thread.start()
+    
+    def stop(self):
+        """Stop the animation."""
+        self.stop_event.set()
+        if self.thread:
+            self.thread.join(timeout=0.5)
+        # Clear the line
+        print('\r' + ' ' * 50 + '\r', end='', flush=True)
 
 def load_config():
     """Load configuration from file."""
@@ -197,9 +229,16 @@ def cmd_ask(args):
                     break
                 
                 messages.append({"role": "user", "content": query})
-                print("PRIMBOT: ", end="", flush=True)
                 
-                response = agent.run(messages.copy())
+                # Start thinking animation
+                thinking = ThinkingAnimation()
+                thinking.start()
+                
+                try:
+                    response = agent.run(messages.copy())
+                finally:
+                    # Stop animation
+                    thinking.stop()
                 # Remove images from response for CLI (markdown image syntax: ![alt](url))
                 response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
                 # Remove image sections and references
@@ -221,7 +260,16 @@ def cmd_ask(args):
     else:
         try:
             messages = [{"role": "user", "content": query}]
-            response = agent.run(messages)
+            
+            # Start thinking animation
+            thinking = ThinkingAnimation()
+            thinking.start()
+            
+            try:
+                response = agent.run(messages)
+            finally:
+                # Stop animation
+                thinking.stop()
             # Remove images from response for CLI (markdown image syntax: ![alt](url))
             response = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', '', response)
             # Remove image sections and references
