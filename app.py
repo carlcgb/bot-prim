@@ -151,8 +151,6 @@ st.markdown("""
             }
             // Prevent body scroll when modal is open
             document.body.style.overflow = "hidden";
-        } else {
-            console.error('Modal elements not found');
         }
     };
     

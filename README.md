@@ -151,7 +151,8 @@ GEMINI_API_KEY = "votre_cle_api"
 - ✅ **Filtrage par pertinence** : Seulement les résultats avec score ≥30% (seuil abaissé pour plus de résultats pertinents)
 - ✅ **Contexte optimisé** : Maximum 6000 caractères pour documents très pertinents (≥70%), 4000 pour pertinents (≥50%), 3000 pour modérés
 - ✅ **Chunking optimisé** : 800 caractères pour une meilleure pertinence
-- ✅ **Recherches multiples** : 3 variations de requête pour une meilleure couverture
+- ✅ **Recherches multiples** : 4 variations de requête pour une meilleure couverture
+- ✅ **Priorisation images** : Système de scoring pour prioriser les captures d'écran complètes de l'interface plutôt que les emojis/icônes
 
 ### Réponses Orientées Support Client
 - 👋 **Accueil empathique** : Ton amical et professionnel
