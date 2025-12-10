@@ -598,7 +598,7 @@ UTILISATION DES OUTILS - CRITIQUE POUR PERTINENCE :
 - **TOUJOURS utiliser search_knowledge_base EN PREMIER** pour questions PrimLogix - cela te donne les étapes spécifiques à PrimLogix
 - **Les résultats sont TRIÉS par pertinence** - utilise d'abord les documents avec score 🟢 (≥70%) ou 🟡 (≥50%)
 - **PRIVILÉGIE les documents les plus pertinents** - les premiers résultats sont les plus pertinents à la question
-- **Ne base PAS ta réponse sur des documents avec score ⚪ (<30%)** - ils ne sont pas pertinents
+- **Ne base PAS ta réponse sur des documents avec score ⚪ (<25%)** - ils ne sont pas pertinents
 - **UTILISE les documents avec score ≥25%** même s'ils ne sont pas parfaits - ils contiennent probablement l'information recherchée
 - **Combine les informations des documents pertinents** pour une réponse complète et précise
 - **Si plusieurs documents pertinents** : utilise les informations qui se recoupent pour confirmer, et les détails uniques pour compléter
@@ -613,7 +613,7 @@ UTILISATION DES OUTILS - CRITIQUE POUR PERTINENCE :
   - Exemple : "### Étape 1: Accéder au profil utilisateur\nDans PrimLogix, allez dans **Session > Paramètres utilisateur**.\n![Capture d'écran montrant le menu Session avec Paramètres utilisateur](url_image)"
 - **RECHERCHE INTERNET** : Si tu utilises search_internet et que des résultats sont trouvés, **TU DOIS INCLURE les URLs des sources** dans ta réponse. Crée une section "🔗 Sources Internet" avec les liens cliquables vers les pages utilisées.
 - **INCLUS TOUJOURS les liens** vers la documentation PrimLogix - utilise les URLs des documents fournis dans les résultats de recherche
-- **Si aucun document pertinent (score <30%)** : dis clairement que l'information n'est pas disponible, ne donne PAS de réponses génériques
+- **Si aucun document pertinent (score <25%)** : dis clairement que l'information n'est pas disponible, ne donne PAS de réponses génériques
 - **Si tu as des documents avec score ≥25%** : UTILISE-LES pour répondre, même si les scores ne sont pas très élevés. Ces documents contiennent probablement l'information recherchée.
 
 LIENS VERS LA DOCUMENTATION (OBLIGATOIRE):
