@@ -281,9 +281,20 @@ class PrimAgent:
                         
                         # Only include images from aide.primlogix.com (the official help site)
                         if img_url and 'aide.primlogix.com' in img_url:
-                            # Only exclude very obvious small square icons (not screenshots)
-                            # Be less strict - only exclude if it's clearly a tiny icon
+                            # Only exclude very obvious small square icons and warning/stop signs (not screenshots)
+                            # Be less strict - only exclude if it's clearly a tiny icon or warning sign
                             img_lower = (img_url + ' ' + img_alt + ' ' + img_context).lower()
+                            
+                            # Exclude warning/stop sign icons
+                            warning_patterns = [
+                                'stop', 'stop-sign', 'stop-signal', 'arret', 'arrêt', 'warning',
+                                'avertissement', 'alert', 'alerte', 'danger', 'attention',
+                                'octagon', 'octogone', 'stop-icon', 'icone-arret', 'icone-stop',
+                                'panneau arret', 'panneau arrêt', 'panneau stop', 'panneau avertissement',
+                                'red stop', 'arret rouge', 'arrêt rouge', 'hand stop', 'main stop'
+                            ]
+                            if any(pattern in img_lower for pattern in warning_patterns):
+                                continue  # Skip warning/stop sign icons
                             
                             # Only exclude if it's clearly a small icon (very strict criteria)
                             # Check for very small square icons (16x16, 32x32, etc.) in filename

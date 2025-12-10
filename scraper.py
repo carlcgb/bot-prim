@@ -161,7 +161,11 @@ def scrape_page(url):
                         # Document/folder icons (NOT screenshots)
                         'document', 'doc', 'file', 'folder', 'dossier', 'cv', 'resume',
                         'pdf-icon', 'word-icon', 'excel-icon', 'file-icon', 'folder-icon',
-                        'document-icon', 'icone-document', 'icone-dossier', 'icone-fichier'
+                        'document-icon', 'icone-document', 'icone-dossier', 'icone-fichier',
+                        # Warning/stop sign icons
+                        'stop', 'stop-sign', 'stop-signal', 'arret', 'arrêt', 'warning',
+                        'avertissement', 'alert', 'alerte', 'danger', 'attention',
+                        'octagon', 'octogone', 'stop-icon', 'icone-arret', 'icone-stop'
                     ]
                     
                     # Check if filename suggests it's an icon/logo/arrow/emoji
@@ -205,7 +209,16 @@ def scrape_page(url):
                         'cv icon', 'resume icon', 'document with', 'folder with',
                         'document cv', 'icone document', 'icone dossier', 'icone fichier',
                         'icone cv', 'document avec loupe', 'dossier avec loupe',
-                        'document with magnifying', 'folder with magnifying'
+                        'document with magnifying', 'folder with magnifying',
+                        # Warning/stop sign icons - STRICT FILTERING
+                        'stop sign', 'stop signal', 'panneau arret', 'panneau arrêt',
+                        'panneau stop', 'stop icon', 'icone stop', 'icone arret', 'icone arrêt',
+                        'warning sign', 'panneau avertissement', 'warning icon', 'icone warning',
+                        'icone avertissement', 'alert sign', 'panneau alerte', 'alert icon',
+                        'icone alerte', 'danger sign', 'panneau danger', 'danger icon',
+                        'icone danger', 'attention sign', 'panneau attention', 'attention icon',
+                        'icone attention', 'octagon', 'octogone', 'red stop', 'arret rouge',
+                        'arrêt rouge', 'hand stop', 'main stop', 'stop hand'
                     ]
                     is_icon_text = any(pattern in combined_text for pattern in icon_text_patterns)
                     
