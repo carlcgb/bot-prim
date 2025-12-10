@@ -239,7 +239,7 @@ class PrimAgent:
             
             # Build context with filtered and sorted results
             context = f"📚 Résultats de recherche dans la documentation PrimLogix pour: '{query}'\n"
-            context += f"Trouvé {len(filtered_results)} document(s) pertinent(s) (filtrés par pertinence ≥30%)\n\n"
+            context += f"Trouvé {len(filtered_results)} document(s) pertinent(s) (filtrés par pertinence ≥25%)\n\n"
             context += "**⚠️ IMPORTANT : Utilise UNIQUEMENT les informations des documents ci-dessous. Les documents sont triés par pertinence (score le plus élevé en premier). Privilégie les documents avec score 🟢 (≥70%) ou 🟡 (≥50%), mais UTILISE AUSSI les documents avec score 🟠 (≥25%) - ils contiennent probablement l'information recherchée.**\n\n"
             
             seen_docs = set()  # Avoid exact duplicate content
@@ -599,7 +599,7 @@ UTILISATION DES OUTILS - CRITIQUE POUR PERTINENCE :
 - **Les résultats sont TRIÉS par pertinence** - utilise d'abord les documents avec score 🟢 (≥70%) ou 🟡 (≥50%)
 - **PRIVILÉGIE les documents les plus pertinents** - les premiers résultats sont les plus pertinents à la question
 - **Ne base PAS ta réponse sur des documents avec score ⚪ (<30%)** - ils ne sont pas pertinents
-- **UTILISE les documents avec score ≥30%** même s'ils ne sont pas parfaits - ils contiennent probablement l'information recherchée
+- **UTILISE les documents avec score ≥25%** même s'ils ne sont pas parfaits - ils contiennent probablement l'information recherchée
 - **Combine les informations des documents pertinents** pour une réponse complète et précise
 - **Si plusieurs documents pertinents** : utilise les informations qui se recoupent pour confirmer, et les détails uniques pour compléter
 - **UTILISE search_internet pour compléter les détails techniques manquants** : Si la documentation PrimLogix mentionne une configuration (SMTP, IMAP, etc.) mais ne donne pas les détails techniques (ports, serveurs, adresses), utilise search_internet pour trouver ces informations. Exemples : "SMTP port Outlook 365", "Gmail IMAP server address", "POP3 port number standard"
@@ -614,7 +614,7 @@ UTILISATION DES OUTILS - CRITIQUE POUR PERTINENCE :
 - **RECHERCHE INTERNET** : Si tu utilises search_internet et que des résultats sont trouvés, **TU DOIS INCLURE les URLs des sources** dans ta réponse. Crée une section "🔗 Sources Internet" avec les liens cliquables vers les pages utilisées.
 - **INCLUS TOUJOURS les liens** vers la documentation PrimLogix - utilise les URLs des documents fournis dans les résultats de recherche
 - **Si aucun document pertinent (score <30%)** : dis clairement que l'information n'est pas disponible, ne donne PAS de réponses génériques
-- **Si tu as des documents avec score ≥30%** : UTILISE-LES pour répondre, même si les scores ne sont pas très élevés. Ces documents contiennent probablement l'information recherchée.
+- **Si tu as des documents avec score ≥25%** : UTILISE-LES pour répondre, même si les scores ne sont pas très élevés. Ces documents contiennent probablement l'information recherchée.
 
 LIENS VERS LA DOCUMENTATION (OBLIGATOIRE):
 - **TOUJOURS inclure des liens cliquables** vers les pages de l'aide en ligne que tu utilises
