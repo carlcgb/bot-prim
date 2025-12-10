@@ -110,13 +110,65 @@ else:
 # Sidebar Configuration
 st.sidebar.header("⚙️ Configuration")
 
-provider_type = st.sidebar.radio("LLM Provider", ["Google Gemini", "Local (Ollama/LocalAI)"])
+provider_type = st.sidebar.radio("LLM Provider", ["OpenAI", "Google Gemini", "Local (Ollama/LocalAI)"])
 
 api_key = ""
 base_url = None
-model_name = "gemini-2.5-flash"
+model_name = "gpt-3.5-turbo"
 
-if provider_type == "Google Gemini":
+if provider_type == "OpenAI":
+    # Get OpenAI API key with priority: Streamlit secrets > CLI config > Environment variable > User input
+    default_openai_key = ""
+    
+    # Priority 1: Streamlit Cloud secrets
+    if hasattr(st, 'secrets') and hasattr(st.secrets, 'OPENAI_API_KEY'):
+        default_openai_key = st.secrets.OPENAI_API_KEY
+    # Priority 2: CLI config file (~/.primbot/config.json)
+    elif not default_openai_key:
+        try:
+            config_file = Path.home() / ".primbot" / "config.json"
+            if config_file.exists():
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    cli_config = json.load(f)
+                    if cli_config.get('openai_api_key'):
+                        default_openai_key = cli_config['openai_api_key']
+        except Exception:
+            pass
+    # Priority 3: Environment variable
+    if not default_openai_key and "OPENAI_API_KEY" in os.environ:
+        default_openai_key = os.getenv("OPENAI_API_KEY", "")
+    
+    st.sidebar.info("💳 **OpenAI** : Utilisez votre clé API OpenAI. Obtenez votre clé sur [platform.openai.com](https://platform.openai.com/api-keys)")
+    
+    api_key = st.sidebar.text_input(
+        "OpenAI API Key", 
+        value=default_openai_key, 
+        type="password", 
+        help="Get your API key from https://platform.openai.com/api-keys"
+    )
+    
+    # Save to CLI config if user enters a new key
+    if api_key and api_key != default_openai_key:
+        try:
+            config_file = Path.home() / ".primbot" / "config.json"
+            config_file.parent.mkdir(exist_ok=True)
+            config = {}
+            if config_file.exists():
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            config['openai_api_key'] = api_key
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+        except Exception:
+            pass
+    base_url = None  # Use default OpenAI endpoint
+    model_name = st.sidebar.selectbox(
+        "Model Name", 
+        ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4o", "gpt-4o-mini"],
+        index=0,
+        help="gpt-3.5-turbo: Fast and affordable. gpt-4: Most capable but slower and more expensive."
+    )
+elif provider_type == "Google Gemini":
     # Get Gemini API key with priority: Streamlit secrets > CLI config > Environment variable > User input
     default_gemini_key = ""
     
