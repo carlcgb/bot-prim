@@ -21,7 +21,13 @@ class PrimAgent:
         
         self.provider = "Google Gemini"
         self.model_name = model
-        self.ddgs = DDGS()
+        # Suppress warnings when initializing DDGS
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=RuntimeWarning)
+            if DDGS is None:
+                raise ImportError("ddgs package is required. Install it with: pip install ddgs")
+            self.ddgs = DDGS()
         
         # Configure Gemini API
         genai.configure(api_key=api_key)
@@ -215,21 +221,21 @@ class PrimAgent:
             # Sort by relevance score (highest first)
             all_results.sort(key=lambda x: x['score'], reverse=True)
             
-            # Filter by minimum relevance threshold (30% - lowered to catch more relevant docs)
-            filtered_results = [r for r in all_results if r['score'] >= 30]
+            # Filter by minimum relevance threshold (25% - lowered further to catch more relevant docs)
+            filtered_results = [r for r in all_results if r['score'] >= 25]
             
             # If we have good results (score >= 50%), prioritize them
             high_relevance = [r for r in filtered_results if r['score'] >= 50]
             if len(high_relevance) >= 3:
-                filtered_results = high_relevance[:7]  # Top 7 high-relevance results
+                filtered_results = high_relevance[:10]  # Top 10 high-relevance results
             else:
                 # Mix of high and medium relevance, but limit total
-                filtered_results = filtered_results[:7]  # Top 7 results
+                filtered_results = filtered_results[:10]  # Top 10 results
             
             if not filtered_results:
-                # If no results above 30%, use top 5 even if lower
+                # If no results above 25%, use top 8 even if lower
                 # This ensures we always have some context
-                filtered_results = all_results[:5]
+                filtered_results = all_results[:8]
             
             # Build context with filtered and sorted results
             context = f"📚 Résultats de recherche dans la documentation PrimLogix pour: '{query}'\n"

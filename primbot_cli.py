@@ -94,6 +94,12 @@ class ThinkingAnimation:
     
     def __enter__(self):
         """Context manager entry - start animation and hide output."""
+        # Set environment variables FIRST to suppress Google warnings before any imports
+        import os
+        os.environ['GRPC_VERBOSITY'] = 'ERROR'
+        os.environ['GLOG_minloglevel'] = '2'
+        os.environ['PYTHONWARNINGS'] = 'ignore'
+        
         # Save original streams
         self.original_stdout = sys.stdout
         self.original_stderr = sys.stderr
@@ -107,11 +113,6 @@ class ThinkingAnimation:
         
         # Disable logging output during thinking
         import logging
-        import os
-        # Suppress Google ALTS warnings
-        os.environ['GRPC_VERBOSITY'] = 'ERROR'
-        os.environ['GLOG_minloglevel'] = '2'
-        
         root_logger = logging.getLogger()
         self.original_logging_handlers = root_logger.handlers[:]
         # Remove all handlers temporarily
@@ -124,6 +125,7 @@ class ThinkingAnimation:
         # Also suppress warnings from specific modules
         import warnings
         warnings.filterwarnings('ignore')
+        warnings.simplefilter('ignore')
         
         # Start animation
         self.stop_event.clear()
