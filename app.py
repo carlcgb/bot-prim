@@ -44,9 +44,15 @@ try:
         warnings.filterwarnings('ignore', category=RuntimeWarning)
         warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
         from agent import PrimAgent
-except (KeyError, ImportError, AttributeError) as e:
-    logger.error(f"Failed to import PrimAgent: {e}")
-    raise
+except (KeyError, ImportError, AttributeError, Exception) as e:
+    # Log the error but don't raise - allow app to continue with graceful degradation
+    logger.warning(f"Failed to import PrimAgent: {e}")
+    # Define a minimal fallback class to prevent app crash
+    class PrimAgent:
+        def __init__(self, *args, **kwargs):
+            pass
+        def run(self, messages):
+            return "⚠️ Erreur: Impossible d'importer l'agent. Veuillez vérifier les logs pour plus de détails."
 from knowledge_base import collection
 from storage_local import get_storage
 import json

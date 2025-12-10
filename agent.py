@@ -21,6 +21,12 @@ with warnings.catch_warnings():
             from duckduckgo_search import DDGS
         except ImportError:
             DDGS = None
+import json
+import logging
+import google.generativeai as genai
+
+logger = logging.getLogger(__name__)
+
 # Import knowledge_base function (lazy import to avoid circular dependencies)
 try:
     from knowledge_base import query_knowledge_base
@@ -29,11 +35,6 @@ except (ImportError, KeyError, AttributeError) as e:
     # Define a fallback function
     def query_knowledge_base(query, n_results=10):
         return {"documents": [[]], "metadatas": [[]], "distances": [[]]}
-import json
-import logging
-import google.generativeai as genai
-
-logger = logging.getLogger(__name__)
 
 class PrimAgent:
     def __init__(self, api_key, base_url=None, model="gemini-2.5-flash", provider="Google Gemini"):
