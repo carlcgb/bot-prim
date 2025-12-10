@@ -22,14 +22,14 @@ try:
                     os.environ['QDRANT_API_KEY'] = str(qdrant_api_key)
                     # Log for debugging (only in Streamlit Cloud)
                     if os.environ.get('USE_QDRANT', 'false').lower() == 'true':
-                        print(f"✅ Qdrant Cloud configured: URL={os.environ.get('QDRANT_URL', 'N/A')[:50]}...")
+                        logger.info(f"Qdrant Cloud configured: URL={os.environ.get('QDRANT_URL', 'N/A')[:50]}...")
         except (KeyError, AttributeError, TypeError) as e:
             # Secrets file doesn't exist or has wrong structure, use environment variables instead
-            print(f"⚠️ Could not load Qdrant secrets: {e}")
+            logger.warning(f"Could not load Qdrant secrets: {e}")
             pass
 except Exception as e:
     # If secrets are not available, continue with environment variables
-    print(f"⚠️ Secrets not available: {e}")
+    logger.warning(f"Secrets not available: {e}")
     pass
 
 # Now import knowledge_base (after Qdrant env vars are set)

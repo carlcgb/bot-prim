@@ -135,11 +135,9 @@ class PrimAgent:
         return unique_expanded[:8]  # Limit to 8 variations (increased for better coverage)
     
     def _search_kb(self, query):
-        print(f"DEBUG: Searching KB for '{query}'")
         try:
             # Expand query for better understanding
             search_queries = self._expand_query(query)
-            print(f"DEBUG: Expanded queries: {search_queries[:3]}...")  # Log first 3
             
             # Search with more results initially to filter later
             all_results = []
@@ -193,7 +191,7 @@ class PrimAgent:
                                 'images': images  # Store images with result
                             })
                 except Exception as e:
-                    print(f"DEBUG: Error with query '{search_query}': {e}")
+                    logger.warning(f"Error with query '{search_query}': {e}")
                     continue
             
             if not all_results:
@@ -242,12 +240,6 @@ class PrimAgent:
                 title = metadata.get('title', 'Untitled')
                 chunk_idx = metadata.get('chunk_index', '?')
                 
-                # Debug: log if images are found (after title is defined)
-                if images:
-                    print(f"DEBUG: Found {len(images)} image(s) for document '{title[:50]}...'")
-                else:
-                    print(f"DEBUG: No images found for document '{title[:50]}...'")
-                
                 # Relevance score indicator
                 if score >= 70:
                     relevance_score = f" [🟢 {score}% - TRÈS PERTINENT]"
@@ -271,7 +263,6 @@ class PrimAgent:
                 
                 # Add images if available - be less strict, include images from aide.primlogix.com
                 if images:
-                    print(f"DEBUG: Processing {len(images)} image(s) for document '{title[:50]}...'")
                     # Filter images - only exclude obvious small icons, include most images from aide en ligne
                     relevant_images = []
                     for img in images:
@@ -318,7 +309,6 @@ class PrimAgent:
                     
                     # Add images to context (limit to 5 per document for more coverage)
                     if relevant_images:
-                        print(f"DEBUG: Adding {len(relevant_images)} relevant image(s) to context for document '{title[:50]}...'")
                         context += f"\n**📸 Images de l'aide en ligne PrimLogix (⚠️ TU DOIS INCLURE CES IMAGES DANS TA RÉPONSE - NE DIS JAMAIS QUE TU NE PEUX PAS AFFICHER D'IMAGES) :**\n"
                         for img_idx, img in enumerate(relevant_images[:5], 1):  # Max 5 images per document
                             img_url = img['url']

@@ -147,11 +147,11 @@ GEMINI_API_KEY = "votre_cle_api"
 - 💬 **Commentaires détaillés** : Possibilité d'expliquer pourquoi une réponse n'était pas utile
 
 ### Performance Optimisée
-- ✅ **Recherche rapide** : Expansion intelligente des requêtes avec synonymes, 8 résultats optimisés pour des réponses plus rapides
-- ✅ **Filtrage par pertinence** : Seulement les résultats avec score ≥40%
+- ✅ **Recherche rapide** : Expansion intelligente des requêtes avec synonymes, 8 variations de requête pour une meilleure couverture
+- ✅ **Filtrage par pertinence** : Seulement les résultats avec score ≥30% (seuil abaissé pour plus de résultats pertinents)
 - ✅ **Contexte optimisé** : Maximum 6000 caractères pour documents très pertinents (≥70%), 4000 pour pertinents (≥50%), 3000 pour modérés
 - ✅ **Chunking optimisé** : 800 caractères pour une meilleure pertinence
-- ✅ **Recherches limitées** : 2 variations de requête au lieu de 3 pour une meilleure vitesse
+- ✅ **Recherches multiples** : 3 variations de requête pour une meilleure couverture
 
 ### Réponses Orientées Support Client
 - 👋 **Accueil empathique** : Ton amical et professionnel
