@@ -68,11 +68,11 @@ try:
     # Let's check if it's reasonable
     if count == 0:
         print("\n❌ Base de données vide!")
-        print("   Exécutez: primbot ingest")
+        print("   Exécutez: python ingest.py")
     elif count < 2000:
         print(f"\n⚠️  Base de données semble incomplète ({count} documents)")
         print("   Attendu: ~2600-3200 documents")
-        print("   Exécutez: primbot ingest pour réingérer")
+        print("   Exécutez: python ingest.py pour réingérer")
     elif count >= 2000:
         print(f"\n✅ Base de données semble complète ({count} documents)")
         print("   Nombre attendu: ~2600-3200 documents")

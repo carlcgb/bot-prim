@@ -2,43 +2,15 @@
 
 ## 🚀 Installation Rapide
 
-### Option 1: Installation depuis GitHub (Recommandé)
-
-```bash
-pip install git+https://github.com/carlcgb/bot-prim.git
-```
-
-### Option 2: Installation depuis cette release
-
-1. **Téléchargez les fichiers de cette release :**
-   - `primbot-1.0.4-py3-none-any.whl` (recommandé pour Windows/Linux/macOS)
-   - ou `primbot-1.0.4.tar.gz` (archive source)
-
-2. **Installez le package :**
-   ```bash
-   # Pour le fichier .whl
-   pip install primbot-1.0.4-py3-none-any.whl
-   
-   # Pour le fichier .tar.gz
-   pip install primbot-1.0.4.tar.gz
-   ```
-
-### Option 3: Installation locale (Développement)
+### Installation locale (Streamlit)
 
 ```bash
 git clone https://github.com/carlcgb/bot-prim.git
 cd bot-prim
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-pip install -e .
 ```
-
-## ✅ Vérifier l'installation
-
-```bash
-primbot --help
-```
-
-Si la commande n'est pas trouvée, consultez [docs/CLI_INSTALLATION.md](https://github.com/carlcgb/bot-prim/blob/main/docs/CLI_INSTALLATION.md) pour ajouter `primbot` à votre PATH.
 
 ## 🆕 Nouveautés v1.0.4
 
@@ -60,7 +32,7 @@ Si la commande n'est pas trouvée, consultez [docs/CLI_INSTALLATION.md](https://
 - ✅ **Format compact** : Instructions système mises à jour pour des réponses concises mais complètes
 - ✅ **Cohérence des étapes** : Instructions renforcées pour garantir que chaque étape suit logiquement la précédente
 - ✅ **Numérotation forcée** : Instructions système renforcées pour garantir que les étapes commencent toujours par "Étape 1"
-- ✅ **Retrait complet des images** : Dans toutes les versions (CLI, Web), seules les URLs vers les pages pertinentes sont affichées. Toutes les références aux images retirées des instructions système
+- ✅ **Retrait complet des images** : Dans l'interface web, seules les URLs vers les pages pertinentes sont affichées. Toutes les références aux images retirées des instructions système
 - ✅ **Secrets Qdrant** : Vérification et chargement correct des secrets depuis Streamlit secrets et variables d'environnement
 - ✅ **Nettoyage du code** : Suppression de plus de 200 lignes de code lié au traitement d'images
 
@@ -79,69 +51,35 @@ Si la commande n'est pas trouvée, consultez [docs/CLI_INSTALLATION.md](https://
 
 ### Configuration
 
-```bash
-# Configuration interactive
-primbot config
+Créez un fichier `.env` à la racine :
 
-# Ou directement
-primbot config --gemini-key VOTRE_CLE_API
+```bash
+GEMINI_API_KEY=votre_cle_gemini
+USE_QDRANT=true
+QDRANT_URL=https://votre-cluster.qdrant.io:6333
+QDRANT_API_KEY=votre_cle_api
 ```
 
 **Obtenez votre clé API Gemini gratuite :** [Google AI Studio](https://aistudio.google.com/)
 
 ### Base de Connaissances
 
-**Option A : Qdrant Cloud (Recommandé - déjà migré)**
-
-La base de connaissances est déjà disponible dans Qdrant Cloud (2630 documents). Configurez simplement :
+La base Qdrant Cloud est déjà prête (≈2630 documents).  
+Pour ré-ingérer (mise à jour) :
 
 ```bash
-# Dans votre fichier .env ou variables d'environnement
-USE_QDRANT=true
-QDRANT_URL=https://votre-cluster.qdrant.io:6333
-QDRANT_API_KEY=votre_cle_api
+python ingest.py
 ```
 
-**Option B : ChromaDB Local**
+### Démarrer l'interface web
 
 ```bash
-primbot ingest
-```
-
-### Poser des Questions
-
-```bash
-# Question unique
-primbot ask "comment créer un candidat"
-
-# Mode interactif
-primbot ask --interactive
-```
-
-## 📋 Commandes Disponibles
-
-### Configuration
-```bash
-primbot config                    # Configuration interactive
-primbot config --show            # Afficher la configuration actuelle
-primbot config --gemini-key KEY  # Configurer la clé API Gemini
-```
-
-### Base de Connaissances
-```bash
-primbot ingest                   # Initialiser/mettre à jour la base (ChromaDB local)
-```
-
-### Questions
-```bash
-primbot ask "question"           # Poser une question unique
-primbot ask --interactive        # Mode chat interactif
+streamlit run app.py
 ```
 
 ## 🔗 Liens Utiles
 
 - **[Documentation complète](https://github.com/carlcgb/bot-prim#readme)**
-- **[Guide d'utilisation CLI](https://github.com/carlcgb/bot-prim/blob/main/docs/CLI_USAGE.md)**
 - **[Guide de migration Qdrant](https://github.com/carlcgb/bot-prim/blob/main/docs/QDRANT_MIGRATION.md)**
 - **[Configuration GitHub Secrets](https://github.com/carlcgb/bot-prim/blob/main/docs/GITHUB_SECRETS.md)**
 

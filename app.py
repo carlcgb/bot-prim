@@ -401,7 +401,7 @@ api_key = ""
 base_url = None
 model_name = "gemini-2.5-flash"
 
-# Get Gemini API key with priority: Streamlit secrets > CLI config > Environment variable > User input
+# Get Gemini API key with priority: Streamlit secrets > Environment variable > User input
 default_gemini_key = ""
 
 # Priority 1: Streamlit Cloud secrets
@@ -410,73 +410,27 @@ try:
         default_gemini_key = st.secrets.GEMINI_API_KEY
 except (KeyError, AttributeError, TypeError):
     pass  # Silently fail if secrets are not available
-# Priority 2: CLI config file (~/.primbot/config.json)
-if not default_gemini_key:
-    try:
-        config_file = Path.home() / ".primbot" / "config.json"
-        if config_file.exists():
-            with open(config_file, 'r', encoding='utf-8') as f:
-                cli_config = json.load(f)
-                if cli_config.get('gemini_api_key'):
-                    default_gemini_key = cli_config['gemini_api_key']
-    except Exception:
-        pass  # Silently fail if config file doesn't exist or can't be read
-# Priority 3: Environment variable
+
+# Priority 2: Environment variable
 if not default_gemini_key and "GEMINI_API_KEY" in os.environ:
     default_gemini_key = os.getenv("GEMINI_API_KEY", "")
 
-if True:  # Always Gemini
-    # Get Gemini API key with priority: Streamlit secrets > CLI config > Environment variable > User input
-    default_gemini_key = ""
-    
-    # Priority 1: Streamlit Cloud secrets
-    if hasattr(st, 'secrets') and hasattr(st.secrets, "GEMINI_API_KEY"):
-        default_gemini_key = st.secrets.GEMINI_API_KEY
-    # Priority 2: CLI config file (~/.primbot/config.json)
-    elif not default_gemini_key:
-        try:
-            config_file = Path.home() / ".primbot" / "config.json"
-            if config_file.exists():
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    cli_config = json.load(f)
-                    if cli_config.get('gemini_api_key'):
-                        default_gemini_key = cli_config['gemini_api_key']
-        except Exception:
-            pass  # Silently fail if config file doesn't exist or can't be read
-    # Priority 3: Environment variable
-    if not default_gemini_key and "GEMINI_API_KEY" in os.environ:
-        default_gemini_key = os.getenv("GEMINI_API_KEY", "")
-    
-    st.sidebar.info("🆓 **Gratuit** : Gemini offre un plan gratuit généreux. Obtenez votre clé sur [Google AI Studio](https://aistudio.google.com/)")
-    
-    api_key = st.sidebar.text_input(
-        "Gemini API Key", 
-        value=default_gemini_key, 
-        type="password", 
-        help="Get your FREE API key from https://aistudio.google.com/. No credit card required!"
-    )
-    
-    # Save to CLI config if user enters a new key
-    if api_key and api_key != default_gemini_key:
-        try:
-            config_file = Path.home() / ".primbot" / "config.json"
-            config_file.parent.mkdir(exist_ok=True)
-            config = {}
-            if config_file.exists():
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-            config['gemini_api_key'] = api_key
-            with open(config_file, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=2)
-        except Exception:
-            pass  # Silently fail if can't save config
-    base_url = None  # Gemini uses google-generativeai library directly
-    model_name = st.sidebar.selectbox(
-        "Model Name", 
-        ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
-        index=0,
-        help="gemini-2.5-flash: Fastest and free. gemini-2.5-pro: Most capable (may have rate limits on free tier)"
-    )
+st.sidebar.info("🆓 **Gratuit** : Gemini offre un plan gratuit généreux. Obtenez votre clé sur [Google AI Studio](https://aistudio.google.com/)")
+
+api_key = st.sidebar.text_input(
+    "Gemini API Key",
+    value=default_gemini_key,
+    type="password",
+    help="Get your FREE API key from https://aistudio.google.com/. No credit card required!"
+)
+
+base_url = None  # Gemini uses google-genai library directly
+model_name = st.sidebar.selectbox(
+    "Model Name",
+    ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+    index=0,
+    help="gemini-2.5-flash: Fastest and free. gemini-2.5-pro: Most capable (may have rate limits on free tier)"
+)
 
 def convert_images_to_clickable(content):
     """Convert markdown images to clickable HTML images with modal."""

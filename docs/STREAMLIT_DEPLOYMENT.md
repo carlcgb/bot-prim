@@ -6,7 +6,7 @@ Guide complet pour déployer PRIMBOT sur Streamlit Cloud.
 
 1. **Compte GitHub** avec votre repository `bot-prim`
 2. **Compte Streamlit Cloud** (gratuit) : [share.streamlit.io](https://share.streamlit.io)
-3. **Clé API OpenAI** (ou Gemini) : [platform.openai.com](https://platform.openai.com/api-keys)
+3. **Clé API Gemini** : [Google AI Studio](https://aistudio.google.com/)
 
 ## 🔧 Étape 1 : Préparer le Repository
 
@@ -40,10 +40,9 @@ qdrant-client
 sentence-transformers
 html2text
 requests
-google-generativeai
+google-genai
 pillow
-openai>=1.0.0
-duckduckgo-search
+ddgs
 ```
 
 ## 🔑 Étape 2 : Configurer les Secrets Streamlit
@@ -61,13 +60,10 @@ duckduckgo-search
 Ajoutez les secrets suivants dans l'éditeur :
 
 ```toml
-# OpenAI API Key (provider par défaut)
-OPENAI_API_KEY = "sk-..."
-
-# Optionnel: Gemini API Key (si vous utilisez Gemini)
+# Gemini API Key
 GEMINI_API_KEY = "..."
 
-# Optionnel: Qdrant Cloud (si vous utilisez Qdrant au lieu de ChromaDB local)
+# Qdrant Cloud
 [qdrant]
 USE_QDRANT = "true"
 QDRANT_URL = "https://your-cluster.qdrant.io:6333"
@@ -137,7 +133,7 @@ Testez avec ces questions :
 
 **Solution :**
 - Vérifiez que les secrets sont correctement configurés dans Streamlit Cloud
-- Vérifiez l'orthographe : `OPENAI_API_KEY` (pas `OPENAI_KEY`)
+- Vérifiez l'orthographe : `GEMINI_API_KEY`
 - Redémarrez l'application après avoir ajouté les secrets
 
 ### Erreur : "Base de connaissances vide"
@@ -156,7 +152,7 @@ Testez avec ces questions :
 
 **Solutions :**
 - Utilisez Qdrant Cloud au lieu de ChromaDB local
-- Utilisez un modèle plus rapide (gpt-3.5-turbo au lieu de gpt-4)
+- Utilisez un modèle plus rapide (gemini-2.5-flash)
 - Vérifiez que la base de connaissances est bien initialisée
 
 ## 🔒 Sécurité
@@ -213,7 +209,6 @@ QDRANT_API_KEY = "..."
 ## 📚 Ressources
 
 - [Documentation Streamlit Cloud](https://docs.streamlit.io/streamlit-community-cloud)
-- [Guide OpenAI API](https://platform.openai.com/docs)
 - [Documentation Qdrant Cloud](https://qdrant.tech/documentation/cloud/)
 
 ## 🆘 Support

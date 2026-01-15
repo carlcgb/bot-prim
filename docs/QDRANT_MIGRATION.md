@@ -109,7 +109,7 @@ Si vous partez de zéro ou voulez réingérer :
 ```bash
 # Configurez les variables d'environnement d'abord
 # Puis exécutez l'ingestion
-primbot ingest
+python ingest.py
 ```
 
 Les données iront automatiquement dans Qdrant Cloud si `USE_QDRANT=true`.

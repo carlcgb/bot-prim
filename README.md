@@ -13,7 +13,7 @@ Agent IA pour l'aide en ligne PrimLogix avec Gemini AI. **100% gratuit**, aucune
 - 📸 **Images contextuelles prioritaires** : Captures d'écran complètes de l'interface PrimLogix priorisées (max 400×300px) avec modal plein écran au clic. Système de scoring intelligent pour exclure emojis/icônes et prioriser les vraies captures d'écran.
 - 🌙 **Mode sombre** : Interface Streamlit en mode sombre par défaut
 - 🤖 **Gemini AI** : Support exclusif Gemini (gratuit, 60 req/min, 1500 req/jour)
-- 💻 **Multi-interface** : CLI et interface Web (Streamlit)
+- 💻 **Interface Web (Streamlit)** : Application cloud et locale
 - 🎯 **Réponses step-by-step détaillées** : Navigation complète avec chemins exacts (Menu > Sous-menu > Option)
 - 📝 **Format uniforme** : Toutes les étapes utilisent le même format, numérotées séquentiellement (Étape 1, 2, 3...)
 - 🌐 **Recherche internet complémentaire** : Utilisation automatique de DuckDuckGo pour compléter les détails techniques (ports SMTP, serveurs, etc.)
@@ -21,78 +21,45 @@ Agent IA pour l'aide en ligne PrimLogix avec Gemini AI. **100% gratuit**, aucune
 
 ## 🚀 Installation
 
-### Méthode recommandée : pip install
+### Local (développement)
 
 ```bash
-# Installation depuis GitHub (dernière version)
-pip install git+https://github.com/carlcgb/bot-prim.git
-
-# Mise à jour vers la dernière version
-pip install --upgrade git+https://github.com/carlcgb/bot-prim.git
-
-# Vérifier l'installation
-primbot --help
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
-
-**Note :** L'installation via `pip install` est la méthode recommandée et vous donne toujours accès à la dernière version du code.
 
 ## 📖 Utilisation Rapide
 
 ### 1. Configuration (Première fois)
 
-```bash
-# Configuration interactive
-primbot config
+Créez un fichier `.env` à la racine du projet :
 
-# Ou directement
-primbot config --gemini-key VOTRE_CLE_API
+```bash
+GEMINI_API_KEY=votre_cle_gemini
+USE_QDRANT=true
+QDRANT_URL=https://d521bd67-bc88-4cf5-9140-23a0744ab85d.us-east4-0.gcp.cloud.qdrant.io:6333
+QDRANT_API_KEY=votre_cle_qdrant
 ```
 
 **Obtenez votre clé API Gemini gratuite :** [Google AI Studio](https://aistudio.google.com/)
 
-La clé API est automatiquement sauvegardée et pré-remplie dans l'interface web.
+### 2. Base de connaissances (Qdrant Cloud)
 
-### 2. Configurer la base de connaissances
-
-**Option A : Qdrant Cloud (Recommandé - déjà migré)**
-
-La base de connaissances est déjà disponible dans Qdrant Cloud (2630 documents). Configurez simplement :
+La base de connaissances est déjà disponible dans Qdrant Cloud (≈2630 documents).  
+Pour ré-ingérer (mise à jour) :
 
 ```bash
-# Créez un fichier .env
-USE_QDRANT=true
-QDRANT_URL=https://d521bd67-bc88-4cf5-9140-23a0744ab85d.us-east4-0.gcp.cloud.qdrant.io:6333
-QDRANT_API_KEY=votre_cle_qdrant
-GEMINI_API_KEY=votre_cle_gemini
+python ingest.py
 ```
 
-**Option B : ChromaDB Local**
+### 3. Démarrer l'interface web
 
-```bash
-primbot ingest  # 5-10 minutes, une seule fois
-```
-
-**Ce qui se passe :**
-- Scraping de https://aide.primlogix.com/prim/fr/5-8/
-- Extraction du contenu textuel de la documentation
-- Création de la base de données vectorielle ChromaDB locale
-
-### 3. Tester le Bot
-
-**Interface Web (Recommandé) :**
 ```bash
 streamlit run app.py
 ```
+
 Ouvrez votre navigateur à `http://localhost:8501`
-
-**CLI :**
-```bash
-# Question unique
-primbot ask "comment ajouter un employé"
-
-# Mode interactif (chat)
-primbot ask --interactive
-```
 
 **Fonctionnalités de l'interface web :**
 - 💬 Chat interactif avec historique
@@ -101,17 +68,6 @@ primbot ask --interactive
 - 🔗 Liens directs vers la documentation
 
 📚 **Guide de test complet** : Voir [docs/LOCAL_TESTING.md](docs/LOCAL_TESTING.md)
-
-## 📋 Commandes CLI
-
-| Commande | Description |
-|----------|-------------|
-| `primbot config` | Configuration interactive |
-| `primbot config --show` | Afficher la configuration |
-| `primbot ingest` | Initialiser/mettre à jour la base de connaissances |
-| `primbot ask "question"` | Poser une question |
-| `primbot ask -i` | Mode interactif (chat) |
-| `primbot ask "q" --model MODEL` | Utiliser un modèle spécifique |
 
 ## 🔧 Configuration
 
@@ -183,8 +139,6 @@ GEMINI_API_KEY = "votre_cle_api"
 ## 📚 Documentation Complémentaire
 
 - **[LOCAL_TESTING.md](docs/LOCAL_TESTING.md)** ⭐ - Guide complet pour tester localement
-- **[CLI_USAGE.md](docs/CLI_USAGE.md)** ⭐ - Guide complet étape par étape
-- **[CLI_INSTALLATION.md](docs/CLI_INSTALLATION.md)** - Installation détaillée et PATH
 - **[FREE_AI_GUIDE.md](docs/FREE_AI_GUIDE.md)** - Options AI gratuites
 - **[AGENT_GUIDE.md](docs/AGENT_GUIDE.md)** - Conseils avancés pour optimiser vos questions
 - **[QDRANT_MIGRATION.md](docs/QDRANT_MIGRATION.md)** - Migration vers Qdrant Cloud (gratuit)
@@ -204,14 +158,13 @@ GEMINI_API_KEY = "votre_cle_api"
 ```
 bot-prim/
 ├── app.py                 # Interface Streamlit
-├── primbot_cli.py         # Interface CLI
 ├── agent.py               # Agent AI (Gemini)
 ├── knowledge_base.py      # Base de données vectorielle
 ├── scraper.py             # Scraping documentation
 ├── ingest.py              # Script d'ingestion
 ├── storage_local.py       # Stockage local (SQLite)
 ├── docs/                  # Documentation
-└── chroma_db/             # Base de données (générée localement)
+└── chroma_db/             # Base de données locale (fallback)
 ```
 
 ## 🛠️ Technologies
@@ -231,7 +184,7 @@ bot-prim/
 - 🎯 **Objectif** : Simplifier l'accès à la documentation PrimLogix avec un support client de qualité
 - 🆓 **100% gratuit** : Aucune carte de crédit, plan gratuit généreux
 - 📝 **Réponses optimisées** : Format compact, étapes cohérentes, liens directs vers la documentation
-- 💻 **Multi-plateforme** : CLI et interface web (Streamlit)
+- 💻 **Interface web** : Streamlit (cloud/local)
 - 🔄 **Amélioration continue** : Système de feedback pour s'améliorer constamment
 - 🛡️ **Robuste** : Gestion d'erreurs avancée, fallback automatique, import sécurisé
 

@@ -12,6 +12,25 @@ BASE_URL = "https://aide.primlogix.com/prim/fr/5-8/"
 visited_urls = set()
 pages_content = []
 
+_MOJIBAKE_MARKERS = ["Ã", "Â", "�", "â€™", "â€œ", "â€", "â€“", "â€”"]
+
+def _mojibake_score(text):
+    return sum(text.count(marker) for marker in _MOJIBAKE_MARKERS)
+
+def fix_mojibake(text):
+    """Best-effort fix for UTF-8 decoded as latin1/cp1252 (common mojibake)."""
+    if not text or not isinstance(text, str):
+        return text
+    if _mojibake_score(text) == 0:
+        return text
+    try:
+        fixed = text.encode('latin1', errors='ignore').decode('utf-8', errors='ignore')
+    except Exception:
+        return text
+    if fixed and _mojibake_score(fixed) < _mojibake_score(text):
+        return fixed
+    return text
+
 def is_valid_url(url):
     """Check if URL is valid and belongs to the target section."""
     parsed = urlparse(url)
@@ -28,7 +47,7 @@ def scrape_page(url):
         response = requests.get(url)
         response.raise_for_status()
         # Ensure proper encoding
-        response.encoding = response.apparent_encoding or 'utf-8'
+        response.encoding = response.apparent_encoding or response.encoding or 'utf-8'
         soup = BeautifulSoup(response.text, 'html.parser')
         
         # Extract main content - adjusting selector based on common documentation structures
@@ -44,6 +63,7 @@ def scrape_page(url):
             # Ensure UTF-8 encoding
             if isinstance(text_content, bytes):
                 text_content = text_content.decode('utf-8', errors='ignore')
+            text_content = fix_mojibake(text_content)
             
             # Extract image URLs from the page with enhanced context
             images = []
@@ -81,6 +101,7 @@ def scrape_page(url):
                         parent_text = parent.get_text(separator=' ', strip=True)
                         # Limit context to 200 chars
                         context_text = parent_text[:200] if parent_text else ""
+                    context_text = fix_mojibake(context_text)
                     
                     # Get figure caption if exists
                     figure_caption = ""
@@ -89,6 +110,7 @@ def scrape_page(url):
                         figcaption = figure.find('figcaption')
                         if figcaption:
                             figure_caption = figcaption.get_text(strip=True)
+                    figure_caption = fix_mojibake(figure_caption)
                     
                     # FILTER OUT ICONS AND SMALL LOGOS - Only keep real screenshots
                     # Check image dimensions from HTML attributes
@@ -174,6 +196,8 @@ def scrape_page(url):
                     # Filter by alt/title text - exclude generic icon/arrow/emoji descriptions
                     alt_text = img.get('alt', '') or img.get('title', '') or ''
                     title_text = img.get('title', '')
+                    alt_text = fix_mojibake(alt_text)
+                    title_text = fix_mojibake(title_text)
                     combined_text = (alt_text + ' ' + title_text).lower()
                     icon_text_patterns = [
                         'icon', 'logo', 'button', 'arrow', 'chevron', 'fleche', 'flèche',
@@ -355,6 +379,7 @@ def scrape_page(url):
                 title = title.decode('utf-8', errors='ignore')
             elif title:
                 title = str(title).encode('utf-8', errors='ignore').decode('utf-8')
+            title = fix_mojibake(title)
             
             pages_content.append({
                 "url": url,

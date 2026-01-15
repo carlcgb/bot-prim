@@ -70,4 +70,4 @@ except Exception as e:
     print(f"⚠️ Erreur lors de la recherche: {e}")
 
 print("\n💡 Pour réingérer la base de données:")
-print("   primbot ingest")
+print("   python ingest.py")

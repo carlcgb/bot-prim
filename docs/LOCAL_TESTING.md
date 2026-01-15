@@ -53,15 +53,6 @@ export QDRANT_URL="https://d521bd67-bc88-4cf5-9140-23a0744ab85d.us-east4-0.gcp.c
 export QDRANT_API_KEY="votre_cle_qdrant"
 ```
 
-### Option 2 : Avec ChromaDB Local
-
-Si vous n'utilisez pas Qdrant, le bot utilisera automatiquement ChromaDB local :
-
-```env
-# Gemini API uniquement
-GEMINI_API_KEY=votre_cle_gemini
-```
-
 ## 📦 Initialiser la Base de Connaissances
 
 ### Avec Qdrant Cloud (déjà migré)
@@ -74,19 +65,13 @@ python -c "from knowledge_base import collection; print(f'Documents: {collection
 
 Vous devriez voir : `Documents: 2630`
 
-### Avec ChromaDB Local
-
-Si vous utilisez ChromaDB local, initialisez la base :
+### Ré-ingérer (mise à jour des données)
 
 ```bash
-# Via CLI
-primbot ingest
-
-# Ou directement
 python ingest.py
 ```
 
-Cela prend 5-10 minutes et ne doit être fait qu'une seule fois.
+Cela prend 5-10 minutes et ne doit être fait qu'une seule fois si la base est déjà migrée.
 
 ## 🧪 Tester le Bot
 
@@ -105,20 +90,7 @@ Ouvrez votre navigateur à `http://localhost:8501`
 - ✅ Tester le système de feedback (👍👎)
 - ✅ Vérifier les statistiques dans la sidebar
 
-### Test 2 : CLI (Ligne de Commande)
-
-```bash
-# Question unique
-primbot ask "comment ajouter un employé"
-
-# Mode interactif
-primbot ask --interactive
-
-# Avec un modèle spécifique
-primbot ask "question" --model gemini-2.0-flash-exp
-```
-
-### Test 3 : Test Python Direct
+### Test 2 : Test Python Direct
 
 ```python
 from agent import PrimAgent
@@ -163,19 +135,11 @@ print(response)
 
 Testez avec ces questions pour vérifier différents aspects :
 
-```bash
-# Test de recherche basique
-primbot ask "comment ajouter un employé"
-
-# Test de recherche spécifique
-primbot ask "procédure pour créer une facture avec tous les champs obligatoires"
-
-# Test de recherche d'erreur
-primbot ask "erreur lors de l'export CSV le champ date facturation est vide"
-
-# Test de recherche de fonctionnalité
-primbot ask "comment configurer les paramètres de paie pour un nouveau dossier candidat"
-```
+Dans l'interface web, testez avec ces questions :
+- "comment ajouter un employé"
+- "procédure pour créer une facture avec tous les champs obligatoires"
+- "erreur lors de l'export CSV le champ date facturation est vide"
+- "comment configurer les paramètres de paie pour un nouveau dossier candidat"
 
 ## 🐛 Dépannage
 
@@ -250,5 +214,4 @@ Une fois les tests locaux réussis :
 - [README Principal](../README.md)
 - [Guide de Migration Qdrant](QDRANT_MIGRATION.md)
 - [Configuration GitHub Secrets](GITHUB_SECRETS.md)
-- [Guide CLI](CLI_USAGE.md)
 

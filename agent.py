@@ -3,7 +3,7 @@ import warnings
 import os
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 warnings.filterwarnings('ignore', message='.*duckduckgo_search.*')
-# Suppress Google ALTS warnings BEFORE importing google.generativeai
+# Suppress Google ALTS warnings BEFORE importing Google GenAI
 os.environ['GRPC_VERBOSITY'] = 'ERROR'
 os.environ['GLOG_minloglevel'] = '3'  # 3 = FATAL only (more aggressive)
 os.environ['PYTHONWARNINGS'] = 'ignore'
@@ -23,7 +23,8 @@ with warnings.catch_warnings():
             DDGS = None
 import json
 import logging
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -52,35 +53,35 @@ class PrimAgent:
                 raise ImportError("ddgs package is required. Install it with: pip install ddgs")
             self.ddgs = DDGS()
         
-        # Configure Gemini API
-        genai.configure(api_key=api_key)
+        # Configure Gemini API client
+        self.client = genai.Client(api_key=api_key)
         
         # Define Gemini Tools using FunctionDeclaration
         self.gemini_tools = [
-            genai.protos.Tool(
+            types.Tool(
                 function_declarations=[
-                    genai.protos.FunctionDeclaration(
+                    types.FunctionDeclaration(
                         name="search_knowledge_base",
                         description="Search the PrimLogix technical documentation for debugging client issues. Use this for: PrimLogix-specific errors, field configurations, database issues, API problems, feature implementation details, configuration parameters, and technical procedures. IMPORTANT: If the first search doesn't return enough results, try multiple searches with different query terms (synonyms, related terms, broader/narrower terms) to find all relevant information.",
-                        parameters=genai.protos.Schema(
-                            type=genai.protos.Type.OBJECT,
+                        parameters=types.Schema(
+                            type=types.Type.OBJECT,
                             properties={
-                                "query": genai.protos.Schema(
-                                    type=genai.protos.Type.STRING,
+                                "query": types.Schema(
+                                    type=types.Type.STRING,
                                     description="Technical search query. Include: error codes, field names, feature names, configuration paths, database references, or specific technical terms from PrimLogix. Try multiple variations if first search doesn't find enough information."
                                 )
                             },
                             required=["query"]
                         )
                     ),
-                        genai.protos.FunctionDeclaration(
+                    types.FunctionDeclaration(
                             name="search_internet",
                             description="Search the internet for technical information to COMPLEMENT PrimLogix documentation. Use this for: SMTP/IMAP/POP port numbers, server addresses, email provider configurations (Outlook, Gmail, etc.), general technical standards, network troubleshooting, or any technical details that might not be in the PrimLogix documentation. ALWAYS use search_knowledge_base FIRST for PrimLogix-specific steps and procedures, then use search_internet to find missing technical details (ports, servers, configuration values).",
-                        parameters=genai.protos.Schema(
-                            type=genai.protos.Type.OBJECT,
+                        parameters=types.Schema(
+                            type=types.Type.OBJECT,
                             properties={
-                                "query": genai.protos.Schema(
-                                    type=genai.protos.Type.STRING,
+                                "query": types.Schema(
+                                    type=types.Type.STRING,
                                     description="Technical search query for specific information needed: port numbers, server addresses, email provider settings, technical standards, or configuration values. Examples: 'SMTP port Outlook 365', 'Gmail IMAP settings', 'POP3 port number'."
                                 )
                             },
@@ -578,13 +579,13 @@ LANGUAGE:
     def _run_gemini(self, messages):
         # Convert OpenAI messages to Gemini History
         history = []
-        for msg in messages[:-1]: # All but last
+        for msg in messages[:-1]:  # All but last
             role = msg['role']
-            content = msg.get('content')
+            content = msg.get('content', '')
             if role == 'user':
-                history.append({'role': 'user', 'parts': [content]})
+                history.append(types.Content(role="user", parts=[types.Part(text=content)]))
             elif role == 'assistant':
-                history.append({'role': 'model', 'parts': [content]})
+                history.append(types.Content(role="model", parts=[types.Part(text=content)]))
         
         last_msg = messages[-1]
         last_content = last_msg['content']
@@ -713,12 +714,12 @@ RÈGLES FINALES - PERTINENCE MAXIMALE :
 - **Français** sauf demande explicite en anglais
 - **Si aucun document pertinent** : dis-le clairement, ne devine pas"""
             
-            model_auto = genai.GenerativeModel(
-                model_name=params_model_name,
+            contents = list(history)
+            contents.append(types.Content(role="user", parts=[types.Part(text=last_content)]))
+            config = types.GenerateContentConfig(
                 tools=self.gemini_tools,
                 system_instruction=system_instruction
             )
-            chat_auto = model_auto.start_chat(history=history)
             
             # Handle function calls manually to avoid "Could not convert part.function_call to text" error
             max_iterations = 10
@@ -726,7 +727,11 @@ RÈGLES FINALES - PERTINENCE MAXIMALE :
             
             while iteration < max_iterations:
                 iteration += 1
-                response = chat_auto.send_message(last_content)
+                response = self.client.models.generate_content(
+                    model=params_model_name,
+                    contents=contents,
+                    config=config
+                )
                 
                 # Check if response has function calls
                 if hasattr(response, 'candidates') and len(response.candidates) > 0:
@@ -768,17 +773,30 @@ RÈGLES FINALES - PERTINENCE MAXIMALE :
                                 function_result = self.tool_map[function_name](query)
                                 
                                 # Send function response back to Gemini
-                                function_response = genai.protos.FunctionResponse(
-                                    name=function_name,
-                                    response={"result": str(function_result)}
+                                # Add model function call and tool response to conversation
+                                contents.append(
+                                    types.Content(
+                                        role="model",
+                                        parts=[types.Part(function_call=function_call)]
+                                    )
                                 )
-                                response = chat_auto.send_message(
-                                    genai.protos.Part(function_response=function_response)
+                                contents.append(
+                                    types.Content(
+                                        role="tool",
+                                        parts=[
+                                            types.Part(
+                                                function_response=types.FunctionResponse(
+                                                    name=function_name,
+                                                    response={"result": str(function_result)}
+                                                )
+                                            )
+                                        ]
+                                    )
                                 )
                                 continue
                 
                 # No function call, return text response
-                if hasattr(response, 'text'):
+                if hasattr(response, 'text') and response.text:
                     return response.text
                 elif hasattr(response, 'candidates') and len(response.candidates) > 0:
                     candidate = response.candidates[0]

@@ -13,7 +13,7 @@ def test_image_filtering():
     
     # Vérifier que la base est initialisée
     if collection.count() == 0:
-        print("❌ Base de connaissances vide. Exécutez d'abord: primbot ingest")
+        print("❌ Base de connaissances vide. Exécutez d'abord: python ingest.py")
         return
     
     # Obtenir une clé API Gemini depuis les variables d'environnement

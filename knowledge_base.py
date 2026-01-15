@@ -1,7 +1,30 @@
 import os
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+def _load_env_file():
+    """Load .env values if present and env vars are not already set."""
+    env_path = Path('.env')
+    if not env_path.exists():
+        return
+    try:
+        with env_path.open('r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except Exception as e:
+        logger.warning(f"Could not load .env file: {e}")
+
+
+_load_env_file()
 
 # Determine which backend to use (Qdrant Cloud or ChromaDB local)
 USE_QDRANT = os.getenv('USE_QDRANT', 'false').lower() == 'true'

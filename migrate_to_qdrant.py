@@ -32,7 +32,7 @@ def migrate_chromadb_to_qdrant():
         
         if chroma_count == 0:
             print("⚠️  ChromaDB is empty. Nothing to migrate.")
-            print("   Run 'primbot ingest' first to populate the knowledge base.")
+            print("   Run 'python ingest.py' first to populate the knowledge base.")
             sys.exit(0)
     except Exception as e:
         print(f"❌ Error accessing ChromaDB: {e}")

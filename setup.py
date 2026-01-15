@@ -19,7 +19,7 @@ setup(
     name="primbot",
     version="1.0.4",
     author="Dev-NTIC",
-    description="PRIMBOT CLI - PrimLogix Debug Agent with Gemini AI",
+    description="PRIMBOT - PrimLogix Debug Agent (Streamlit)",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/carlcgb/bot-prim",
@@ -29,7 +29,7 @@ setup(
         "Issues": "https://github.com/carlcgb/bot-prim/issues",
     },
     packages=find_packages(),
-    py_modules=["agent", "app", "scraper", "knowledge_base", "ingest", "primbot_cli"],
+    py_modules=["agent", "app", "scraper", "knowledge_base", "ingest"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -46,11 +46,6 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=requirements,
-    entry_points={
-        "console_scripts": [
-            "primbot=primbot_cli:main",
-        ],
-    },
     include_package_data=True,
     zip_safe=False,
 )
