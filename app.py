@@ -398,7 +398,6 @@ st.sidebar.header("⚙️ Configuration")
 # Gemini is now mandatory
 provider_type = "Google Gemini"
 api_key = ""
-base_url = None
 model_name = "gemini-2.5-flash"
 
 # Get Gemini API key with priority: Streamlit secrets > Environment variable > User input
@@ -424,7 +423,6 @@ api_key = st.sidebar.text_input(
     help="Get your FREE API key from https://aistudio.google.com/. No credit card required!"
 )
 
-base_url = None  # Gemini uses google-genai library directly
 model_name = st.sidebar.selectbox(
     "Model Name",
     ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
@@ -542,7 +540,7 @@ if prompt := st.chat_input("Describe the problem..."):
                 st.stop()
             
             # Initialize Agent
-            agent = PrimAgent(api_key=api_key, base_url=base_url, model=model_name, provider=provider_type)
+            agent = PrimAgent(api_key=api_key, model=model_name)
             
             # Prepare messages logic
             # We pass full history so it has context

@@ -24,7 +24,7 @@ def test_image_filtering():
         return
     
     # Initialiser l'agent
-    agent = PrimAgent(api_key=api_key, model="gemini-2.5-flash", provider="Google Gemini")
+    agent = PrimAgent(api_key=api_key, model="gemini-2.5-flash")
     
     # Test avec une question qui devrait retourner des images
     test_questions = [

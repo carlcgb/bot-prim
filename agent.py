@@ -38,12 +38,7 @@ except (ImportError, KeyError, AttributeError) as e:
         return {"documents": [[]], "metadatas": [[]], "distances": [[]]}
 
 class PrimAgent:
-    def __init__(self, api_key, base_url=None, model="gemini-2.5-flash", provider="Google Gemini"):
-        # Gemini is now mandatory
-        if provider != "Google Gemini":
-            raise ValueError("Only Google Gemini is supported. Please use provider='Google Gemini'")
-        
-        self.provider = "Google Gemini"
+    def __init__(self, api_key, model="gemini-2.5-flash"):
         self.model_name = model
         # Suppress warnings when initializing DDGS
         import warnings
@@ -485,99 +480,10 @@ class PrimAgent:
             return f"Error searching internet: {e}"
 
     def run(self, messages):
-        # Only Gemini is supported
         return self._run_gemini(messages)
-        # Technical system instruction for debugging-oriented responses
-        system_message = {
-            "role": "system",
-            "content": """You are PRIMBOT, a technical debugging assistant for PrimLogix software. Your role is to help developers and technical support staff debug client issues efficiently.
-
-TECHNICAL ORIENTATION:
-- Provide technical, concise, and actionable debugging information
-- Focus on root causes, error codes, configuration issues, and technical solutions
-- Use technical terminology (field names, error codes, API endpoints, database queries)
-- Include specific technical details: field IDs, table names, configuration paths, log patterns
-- Prioritize diagnostic steps and troubleshooting procedures
-
-RESPONSE STRUCTURE:
-1. **Quick Diagnosis**: Immediate technical assessment of the issue
-2. **Root Cause Analysis**: Technical explanation of why the issue occurs
-3. **Technical Solution**: Step-by-step technical fix with specific details
-4. **Verification Steps**: Technical checks to confirm resolution
-5. **Related Issues**: Common related technical problems and solutions
-
-TECHNICAL DETAILS TO INCLUDE:
-- Exact field names, IDs, and database references
-- Error codes and their meanings
-- Configuration file paths and parameter names
-- API endpoints and request/response formats
-- Database table/column names when relevant
-- Log file locations and what to look for
-- Network/connection troubleshooting steps
-
-TOOLS USAGE:
-- ALWAYS search the knowledge base FIRST for PrimLogix-related questions - try multiple search queries with different terms if first search doesn't find enough information
-- If knowledge base search returns few or no results, try alternative search terms (synonyms, related terms, broader/narrower terms)
-- Use search_internet for general technical issues (email config, SMTP, network issues, etc.) OR when knowledge base doesn't have the information
-- If initial search finds limited information, perform additional searches with related terms to get comprehensive coverage
-- Combine multiple search results from both knowledge base and internet for comprehensive technical answers
-- Don't give up after one search - be thorough and search multiple times with different query variations
-
-RESPONSE STYLE:
-- Be direct and technical - no unnecessary explanations
-- Use code blocks for configuration examples, SQL queries, or command-line instructions
-- Include specific values, paths, and technical references
-- Provide multiple solution approaches when applicable
-- Reference documentation URLs for detailed technical information
-
-LANGUAGE:
-- Respond in French unless the user asks in English
-- Use technical French terminology from PrimLogix documentation"""
-        }
-        
-        # Prepend system message if not already present
-        if messages and messages[0].get("role") != "system":
-            messages = [system_message] + messages
-        
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            tools=self.openai_tools,
-            tool_choice="auto"
-        )
-        
-        message = response.choices[0].message
-        
-        if message.tool_calls:
-            messages.append(message)
-            
-            for tool_call in message.tool_calls:
-                function_name = tool_call.function.name
-                arguments = json.loads(tool_call.function.arguments)
-                
-                result_content = ""
-                if function_name == "search_knowledge_base":
-                    result_content = self._search_kb(arguments['query'])
-                elif function_name == "search_internet":
-                    result_content = self._search_web(arguments['query'])
-                
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "name": function_name,
-                    "content": result_content
-                })
-            
-            final_response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages
-            )
-            return final_response.choices[0].message.content
-        
-        return message.content
 
     def _run_gemini(self, messages):
-        # Convert OpenAI messages to Gemini History
+        # Convert chat messages to Gemini history
         history = []
         for msg in messages[:-1]:  # All but last
             role = msg['role']

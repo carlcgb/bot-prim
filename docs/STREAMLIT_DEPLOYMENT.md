@@ -168,7 +168,7 @@ Testez avec ces questions :
 
 ```toml
 # Minimum requis
-OPENAI_API_KEY = "sk-..."
+GEMINI_API_KEY = "AIzaSy..."
 
 # Optionnel mais recommandé
 [qdrant]
@@ -188,7 +188,7 @@ QDRANT_API_KEY = "..."
 ### Métriques
 
 - **Temps de réponse** : Surveillez dans les logs
-- **Utilisation API** : Surveillez sur [platform.openai.com](https://platform.openai.com/usage)
+- **Utilisation API** : Surveillez sur [aistudio.google.com](https://aistudio.google.com/)
 - **Base de connaissances** : Vérifiez le nombre de documents dans l'interface
 
 ## 🔄 Mises à Jour
